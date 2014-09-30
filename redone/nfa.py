@@ -58,7 +58,7 @@ class NFANode(object):
 				continue
 
 			states.add(node)
-			states |= node._epsilon_states(states.copy())
+			states |= node._epsilon_states(states)
 
 		return states
 
@@ -141,7 +141,7 @@ class NFANode(object):
 					continue
 
 				seen.add(node)
-				lasts |= node._get_lasts(seen.copy())
+				lasts |= node._get_lasts(seen)
 
 		return lasts
 
