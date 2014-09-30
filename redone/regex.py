@@ -265,6 +265,10 @@ class RegexParser(object):
 		will match text according to the given regex rules.
 		"""
 
+		# Special case -- empty patterns produce a graph which will only match ""
+		if not self._tokens:
+			return nfa.NFANode(tag="empty_graph", accept=True)
+
 		graph = self._parse_re()
 
 		if graph is None:
