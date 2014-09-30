@@ -34,7 +34,20 @@ To use this, you just need to do the following:
 # => True or False
 ```
 
-Support for things like `findall`, `search` and groups are in the works.
+The following features are still "in the works":
+* "Standard" regex matching (start to right-most).
+* Unanchored regex matching (left-most to right-most).
+* Submatch extraction.
+* Counted repetition (`<elem>{start,end}`)
+* Assertions (`^`, `$`, `\b` and the like).
+* Substitution.
+
+The following features are likely *not* to be implemented:
+* ASCII escape sequences (there's no need, just embed them in the pattern).
+* POSIX "special" character classes (`[:alnum:]`), just use character classes.
+* Backreferences. Since implementing them in NFAs with polynomial time is
+  NP-complete, the only solution is to use backtracking in that one case
+  (which would massively complicate the codebase).
 
 ## Warnings ##
 * This was made in order to prove a point (and as a programming exercise).
@@ -42,6 +55,4 @@ Support for things like `findall`, `search` and groups are in the works.
   using the well-tested `re` module is *much safer* than using an implementation
   some random on the internet wrote, and that the speed issue isn't a big deal
   on most regular expressions.
-* I have yet to implement character sets (`[abc]` and `[^abc]`), wildcard matches
-  (`.`) and a few other **necessary** features.
 * Not suitable for programmers under the age of 3.
