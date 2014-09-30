@@ -40,14 +40,14 @@ class RegexParser(object):
 	# <basic>  ::= <elem> ("*" | "+" | "?")?
 	# <elem>
 	# <elem>   ::= "(" <re> ")"
-	# <elem>   ::= "[" <char>+ "]"
+	# <elem>   ::= "[" "^"? <char>+ "]"
 	# <elem>   ::= "."
 	# <elem>   ::= <char>
-	# <char>   ::= "\" ("." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
-	# <char>   ::= ¬("." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <char>   ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <char>   ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
 
 	LANGUAGE = set(string.printable)
-	METACHARS = {".", "*", "+", "?", "(", ")", "[", "]", "|", "\\"}
+	METACHARS = {"^", ".", "*", "+", "?", "(", ")", "[", "]", "|", "\\"}
 
 	def __init__(self, tokens):
 		self._tokens = tokens
@@ -122,6 +122,11 @@ class RegexParser(object):
 		# Sets.
 		elif self.peek() == "[":
 			self.next()
+			inverted = False
+
+			if self.peek() == "^":
+				self.next()
+				inverted = True
 
 			char = self._parse_char()
 
@@ -140,6 +145,9 @@ class RegexParser(object):
 			if self.peek() != "]":
 				raise RegexParseException("Missing closing ']' in regex set.")
 			self.next()
+
+			if inverted:
+				chars = self.LANGUAGE ^ chars
 
 			for char in chars:
 				start.add_edge(char, end)
