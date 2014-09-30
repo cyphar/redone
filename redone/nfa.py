@@ -70,14 +70,19 @@ class NFANode(object):
 		the given token.
 		"""
 
-		next_states = set()
 		states = self._epsilon_states()
 
 		# Exact token matches.
+		next_states = set()
 		for state in states:
 			next_states |= state._edges.get(token, set())
 
-		return next_states
+		# Get all epsilon states.
+		out = set()
+		for state in next_states:
+			out |= state._epsilon_states()
+
+		return out
 
 	def add_edge(self, label, node):
 		"""
@@ -102,7 +107,7 @@ class NFANode(object):
 		node) will consume the given string and end on an accepting node.
 		"""
 
-		current_states = {self}
+		current_states = self._epsilon_states()
 
 		start = 0
 		while start < len(string):
