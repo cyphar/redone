@@ -1,0 +1,8 @@
+# Swap files.
+*~
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+
+# Python temporary files.
+*.pyw
+__pycache__/
