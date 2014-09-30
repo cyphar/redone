@@ -20,7 +20,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import string
 from . import nfa
+
 
 class RegexParseException(Exception):
 	pass
@@ -37,8 +39,11 @@ class RegexParser(object):
 	# <simple> ::= <basic>+
 	# <basic>  ::= <elem> ("*" | "+" | "?")?
 	# <elem>   ::= "(" <re> ")"
-	# <elem>   ::= "\" ("*" | "+" | "?" | "(" | ")" | "|" | "\")
-	# <elem>   ::= ¬("*" | "+" | "?" | "(" | ")" | "|" | "\")
+	# <elem>   ::= "\" ("." | "*" | "+" | "?" | "(" | ")" | "|" | "\")
+	# <elem>   ::= "."
+	# <elem>   ::= ¬("." | "*" | "+" | "?" | "(" | ")" | "|" | "\")
+
+	LANGUAGE = set(string.printable)
 
 	def __init__(self, tokens):
 		self._tokens = tokens
@@ -73,7 +78,7 @@ class RegexParser(object):
 		#	raise RegexParseException("Parser state is out-of-bounds on token list.")
 
 	def _parse_elem(self):
-		metachars = {"*", "+", "?", "(", ")", "|", "\\"}
+		metachars = {".", "*", "+", "?", "(", ")", "|", "\\"}
 
 		start = nfa.NFANode(tag="elem_start", accept=False)
 		end = nfa.NFANode(tag="elem_end", accept=True)
@@ -104,6 +109,13 @@ class RegexParser(object):
 				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + char))
 
 			start.add_edge(char, end)
+
+		# Wildcard.
+		elif self.peek() == ".":
+			self.next()
+
+			for char in self.LANGUAGE:
+				start.add_edge(char, end)
 
 		# All other characters.
 		elif self.peek() not in metachars:
