@@ -38,12 +38,16 @@ class RegexParser(object):
 	# <re>     ::= <simple> ( "|" <re> )?
 	# <simple> ::= <basic>+
 	# <basic>  ::= <elem> ("*" | "+" | "?")?
+	# <elem>
 	# <elem>   ::= "(" <re> ")"
-	# <elem>   ::= "\" ("." | "*" | "+" | "?" | "(" | ")" | "|" | "\")
+	# <elem>   ::= "[" <char>+ "]"
 	# <elem>   ::= "."
-	# <elem>   ::= ¬("." | "*" | "+" | "?" | "(" | ")" | "|" | "\")
+	# <elem>   ::= <char>
+	# <char>   ::= "\" ("." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <char>   ::= ¬("." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
 
 	LANGUAGE = set(string.printable)
+	METACHARS = {".", "*", "+", "?", "(", ")", "[", "]", "|", "\\"}
 
 	def __init__(self, tokens):
 		self._tokens = tokens
@@ -77,9 +81,27 @@ class RegexParser(object):
 		#if self._pos > self._length:
 		#	raise RegexParseException("Parser state is out-of-bounds on token list.")
 
-	def _parse_elem(self):
-		metachars = {".", "*", "+", "?", "(", ")", "|", "\\"}
+	def _parse_char(self):
+		# Metacharacter Escapes
+		if self.peek() == "\\":
+			self.next()
 
+			char = self.peek()
+			self.next()
+
+			if char not in self.METACHARS:
+				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + char))
+
+			return char
+
+		# All other characters.
+		elif self.peek() not in self.METACHARS:
+			char = self.peek()
+			self.next()
+
+			return char
+
+	def _parse_elem(self):
 		start = nfa.NFANode(tag="elem_start", accept=False)
 		end = nfa.NFANode(tag="elem_end", accept=True)
 
@@ -91,24 +113,36 @@ class RegexParser(object):
 
 			if self.peek() != ")":
 				raise RegexParseException("Missing closing ')' in regex group.")
-
 			self.next()
 
 			# Make graph link with the start and end.
 			start.add_edge(nfa.EPSILON_EDGE, graph)
 			graph.patch(end, label=nfa.EPSILON_EDGE)
 
-		# Metacharacter Escapes
-		elif self.peek() == "\\":
+		# Sets.
+		elif self.peek() == "[":
 			self.next()
 
-			char = self.peek()
+			char = self._parse_char()
+
+			if char is None:
+				raise RegexParseException("Empty regex set.")
+
+			chars = {char}
+			while not self.end() and self.peek() != "]":
+				char = self._parse_char()
+
+				if char is None:
+					break
+
+				chars.add(char)
+
+			if self.peek() != "]":
+				raise RegexParseException("Missing closing ']' in regex set.")
 			self.next()
 
-			if char not in metachars:
-				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + char))
-
-			start.add_edge(char, end)
+			for char in chars:
+				start.add_edge(char, end)
 
 		# Wildcard.
 		elif self.peek() == ".":
@@ -118,15 +152,13 @@ class RegexParser(object):
 				start.add_edge(char, end)
 
 		# All other characters.
-		elif self.peek() not in metachars:
-			char = self.peek()
-			self.next()
+		else:
+			char = self._parse_char()
+
+			if char is None:
+				return None
 
 			start.add_edge(char, end)
-
-		# Invalid characters.
-		else:
-			return None
 
 		return start
 
@@ -135,7 +167,7 @@ class RegexParser(object):
 
 		if self.peek() in ["*", "+", "?"]:
 			if node is None:
-				raise RegexParseException("Modifier applied to an non-element.")
+				raise RegexParseException("Modifier applied to a non-element.")
 
 			modifier = self.peek()
 			self.next()
@@ -160,13 +192,15 @@ class RegexParser(object):
 			elif modifier == "?":
 				start.add_edge(nfa.EPSILON_EDGE, end)
 
+			else:
+				raise RegexParseException("Unknown modifier.")
+
 			node = start
 
 		if node is None:
 			return None
 
 		return node
-
 
 	def _parse_simple(self):
 		node = self._parse_basic()
@@ -222,7 +256,13 @@ class RegexParser(object):
 		Parses a regular expression and produces an NFANode graph that represents that
 		will match text according to the given regex rules.
 		"""
-		return self._parse_re()
+
+		graph = self._parse_re()
+
+		if graph is None:
+			raise RegexParseException("Unknown error occurred.")
+
+		return graph
 
 
 def compile_regex(pattern):
