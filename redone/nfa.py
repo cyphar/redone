@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
 EPSILON_EDGE = ""
 
 
@@ -36,14 +35,13 @@ class NFANode(object):
 
 	def __init__(self, tag="", accept=False):
 		self._tag = tag
-		self._accept = accept or False
-
+		self._accept = accept
 		self._edges = {}
 
 	def __repr__(self):
 		return "NFANode(tag=%r, accept=%r)" % (self._tag, self._accept)
 
-	def _epsilon_states(self, states=None):
+	def _epsilon_closure(self, states=None):
 		"""
 		Returns the set of all states connected via epsilon edges to the current
 		state (as well as including the current state).
@@ -58,11 +56,11 @@ class NFANode(object):
 				continue
 
 			states.add(node)
-			states |= node._epsilon_states(states)
+			states |= node._epsilon_closure(states)
 
 		return states
 
-	def _match_token(self, token):
+	def _move(self, token):
 		"""
 		Returns the set of states which will consume the given token during the
 		transition. In other words, this will give you the set of states that you
@@ -70,7 +68,7 @@ class NFANode(object):
 		the given token.
 		"""
 
-		states = self._epsilon_states()
+		states = self._epsilon_closure()
 
 		# Exact token matches.
 		next_states = set()
@@ -80,7 +78,7 @@ class NFANode(object):
 		# Get all epsilon states.
 		out = set()
 		for state in next_states:
-			out |= state._epsilon_states()
+			out |= state._epsilon_closure()
 
 		return out
 
@@ -107,14 +105,14 @@ class NFANode(object):
 		node) will consume the given string and end on an accepting node.
 		"""
 
-		current_states = self._epsilon_states()
+		current_states = self._epsilon_closure()
 
 		start = 0
 		while start < len(string):
 			next_states = set()
 
 			for node in current_states:
-				next_states |= node._match_token(string[start])
+				next_states |= node._move(string[start])
 
 			# If there are no next states, you cannot possibly match it.
 			if not next_states:
