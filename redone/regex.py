@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import string
 from . import nfa
+from . import constants
 
 
 class RegexParseException(Exception):
@@ -31,28 +31,34 @@ class RegexParseException(Exception):
 class RegexParser(object):
 	"""
 	An object used internally within redone in order to parse regular expressions
-	and convert them into the equivalent NFANode graph.
+	and convert them into the equivalent NFANode graph. This is an implementation
+	of a recursive descent parser which will parse valid regex.
 	"""
 
-	# BNF for extended regex:
+	# EBNF for 'redone' extended regex:
 	# <re>     ::= <simple> ( "|" <re> )?
 	# <simple> ::= <basic>+
 	# <basic>  ::= <elem> ("*" | "+" | "?")?
-	# <elem>
 	# <elem>   ::= "(" <re> ")"
-	# <elem>   ::= "[" "^"? <char>+ "]"
+	# <elem>   ::= "[" "^"? <token>+ "]"
 	# <elem>   ::= "."
-	# <elem>   ::= <char>
-	# <char>   ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
-	# <char>   ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <elem>   ::= <token>
+	# <token>  ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <token>  ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
 
-	LANGUAGE = set(string.printable)
-	METACHARS = {"^", ".", "*", "+", "?", "(", ")", "[", "]", "|", "\\"}
+	ALPHABET = constants.ALPHABET
+	METACHARS = constants.METACHARS
 
-	def __init__(self, tokens):
+	def __init__(self, tokens, alphabet=None, metachars=None):
 		self._tokens = tokens
 		self._pos = 0
 		self._length = len(tokens)
+
+		if alphabet:
+			self.ALPHABET = set(alphabet)
+
+		if metachars:
+			self.METACHARS = set(metachars)
 
 	def end(self):
 		"""
@@ -78,28 +84,25 @@ class RegexParser(object):
 		if not self.end():
 			self._pos += num
 
-		#if self._pos > self._length:
-		#	raise RegexParseException("Parser state is out-of-bounds on token list.")
-
 	def _parse_char(self):
 		# Metacharacter Escapes
 		if self.peek() == "\\":
 			self.next()
 
-			char = self.peek()
+			token = self.peek()
 			self.next()
 
-			if char not in self.METACHARS:
-				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + char))
+			if token not in self.METACHARS:
+				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + token))
 
-			return char
+			return token
 
 		# All other characters.
 		elif self.peek() not in self.METACHARS:
-			char = self.peek()
+			token = self.peek()
 			self.next()
 
-			return char
+			return token
 
 	def _parse_elem(self):
 		start = nfa.NFANode(tag="elem_start", accept=False)
@@ -121,52 +124,57 @@ class RegexParser(object):
 
 		# Sets.
 		elif self.peek() == "[":
-			self.next()
 			inverted = False
+			self.next()
 
 			if self.peek() == "^":
-				self.next()
 				inverted = True
+				self.next()
 
-			char = self._parse_char()
+			token = self._parse_char()
 
-			if char is None:
+			if token is None:
 				raise RegexParseException("Empty regex set.")
 
-			chars = {char}
+			tokens = {token}
 			while not self.end() and self.peek() != "]":
-				char = self._parse_char()
+				token = self._parse_char()
 
-				if char is None:
+				if token is None:
 					break
 
-				chars.add(char)
+				tokens.add(token)
+
 
 			if self.peek() != "]":
 				raise RegexParseException("Missing closing ']' in regex set.")
 			self.next()
 
+			# We want the inverse of the given character set.
+			# Just XOR with the alphabet.
 			if inverted:
-				chars = self.LANGUAGE ^ chars
+				tokens = self.ALPHABET ^ tokens
 
-			for char in chars:
-				start.add_edge(char, end)
+			# Add all given tokens as edges to the end.
+			for token in tokens:
+				start.add_edge(token, end)
 
 		# Wildcard.
 		elif self.peek() == ".":
 			self.next()
 
-			for char in self.LANGUAGE:
-				start.add_edge(char, end)
+			for token in self.ALPHABET:
+				start.add_edge(token, end)
 
 		# All other characters.
 		else:
-			char = self._parse_char()
+			token = self._parse_char()
 
-			if char is None:
+			if token is None:
 				return None
 
-			start.add_edge(char, end)
+			# Connect start and end with an edge with label=token.
+			start.add_edge(token, end)
 
 		return start
 
@@ -180,6 +188,7 @@ class RegexParser(object):
 			modifier = self.peek()
 			self.next()
 
+			# Set up new start and end nodes.
 			start = nfa.NFANode(tag="modifier_start", accept=False)
 			end = nfa.NFANode(tag="modifier_end", accept=True)
 
@@ -188,21 +197,26 @@ class RegexParser(object):
 			node.patch(end, label=nfa.EPSILON_EDGE)
 
 			# Kleene Star
+			# Connect the start and end node with epsilon edges (bidirectional).
 			if modifier == "*":
 				start.add_edge(nfa.EPSILON_EDGE, end)
 				end.add_edge(nfa.EPSILON_EDGE, start)
 
 			# Kleene Plus
+			# Connect the end node to the start node with an epsilon edge.
 			elif modifier == "+":
 				end.add_edge(nfa.EPSILON_EDGE, start)
 
 			# Optional
+			# Connect the start node to the end node with an epsilon edge.
 			elif modifier == "?":
 				start.add_edge(nfa.EPSILON_EDGE, end)
 
+			# Shouldn't ever reach this.
 			else:
 				raise RegexParseException("Unknown modifier.")
 
+			# Update node to point to the start of the modifier.
 			node = start
 
 		if node is None:
@@ -276,13 +290,21 @@ class RegexParser(object):
 
 		return graph
 
+def _optimise(pattern):
+	# TODO: Optimise and expand patterns.
+	return pattern
 
-def compile_regex(pattern):
+def _compile(pattern):
 	"""
 	Compile a given pattern into an NFA which represents the pattern's state
 	machine. The return statement is an NFANode graph which will match according
 	to the pattern's rules.
 	"""
+
+	pattern = _optimise(pattern)
+
+	if not pattern:
+		raise RegexParseException("Error encountered when optimising pattern.")
 
 	tokens = list(pattern)
 	parser = RegexParser(tokens)

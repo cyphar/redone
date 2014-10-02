@@ -22,6 +22,40 @@
 
 EPSILON_EDGE = ""
 
+def _epsilon_closure(states):
+	"""
+	For a given set of NFA node states, return a set that describes the epsilon
+	closure of all of the given states.
+	"""
+
+	epsilons = set()
+
+	for state in states:
+		epsilons |= state._epsilon_closure()
+
+	return epsilons
+
+def _move(states, token):
+	"""
+	For a given set of NFA node states, return a set that describes the states
+	occupied after transitioning across all edges labeled with the given token.
+	"""
+
+	moved = set()
+
+	for state in states:
+		moved |= state._move(token)
+
+	return moved
+
+def _accept(states):
+	"""
+	For a given set of NFA node states, return true if any of the given states
+	are accepting nodes (otherwise return false).
+	"""
+
+	return any(state._accept for state in states)
+
 
 class NFAException(Exception):
 	pass
@@ -39,7 +73,7 @@ class NFANode(object):
 		self._edges = {}
 
 	def __repr__(self):
-		return "NFANode(tag=%r, accept=%r)" % (self._tag, self._accept)
+		return "<NFANode(tag=%r, accept=%r) at 0x%x>" % (self._tag, self._accept, id(self))
 
 	def _epsilon_closure(self, states=None):
 		"""
@@ -51,11 +85,14 @@ class NFANode(object):
 			states = {self}
 
 		for node in self._edges.get(EPSILON_EDGE, set()):
-			# Stop recursive epsilon expansions.
+			# Avoid infinite recursion.
 			if node in states:
 				continue
 
+			# Add found node to set of states.
 			states.add(node)
+
+			# Recursively calculate its epsilon closure and add it to the set of states.
 			states |= node._epsilon_closure(states)
 
 		return states
@@ -68,27 +105,21 @@ class NFANode(object):
 		the given token.
 		"""
 
-		states = self._epsilon_closure()
+		states = set()
 
-		# Exact token matches.
-		next_states = set()
-		for state in states:
-			next_states |= state._edges.get(token, set())
+		# Get set of states from epsilons which can consume the given token.
+		for state in self._epsilon_closure():
+			states |= state._edges.get(token, set())
 
-		# Get all epsilon states.
-		out = set()
-		for state in next_states:
-			out |= state._epsilon_closure()
-
-		return out
+		# Get all epsilon closures for the given states.
+		return _epsilon_closure(states)
 
 	def add_edge(self, label, node):
 		"""
 		Adds an edge to the current state. It is an error to try to add an edge to
-		something other than an NFANode.
-
-		If the label is '%s', then the edge is treated as an epsilon edge (it consumes
-		no tokens when transitioning through it).
+		something other than an NFANode. If the label is '%s', then the edge is
+		treated as an epsilon edge (it consumes no tokens when transitioning through
+		it).
 		""" % (EPSILON_EDGE)
 
 		if not isinstance(node, NFANode):
@@ -101,27 +132,23 @@ class NFANode(object):
 
 	def accepts(self, string):
 		"""
-		Returns True iff. the NFANode graph (where the current state is the start
+		Returns true iff. the NFANode graph (where the current state is the start
 		node) will consume the given string and end on an accepting node.
 		"""
 
-		current_states = self._epsilon_closure()
+		states = self._epsilon_closure()
 
-		start = 0
-		while start < len(string):
-			next_states = set()
-
-			for node in current_states:
-				next_states |= node._move(string[start])
+		for token in string:
+			next_states = _move(states, token)
 
 			# If there are no next states, you cannot possibly match it.
+			# XXX: This might need to be remove to allow for partial matches.
 			if not next_states:
 				return False
 
-			current_states = next_states
-			start += 1
+			states = next_states
 
-		return any(node._accept for node in current_states)
+		return _accept(states)
 
 	def _get_lasts(self, seen=None):
 		"""
@@ -134,16 +161,20 @@ class NFANode(object):
 
 		lasts = set()
 
+		# If current node is an accepting node, it is  a "last".
 		if self._accept:
 			lasts.add(self)
 
 		for _, nodes in self._edges.items():
 			for node in nodes:
-				# Avoid recursive expansions.
+				# Avoid infinite recursion.
 				if node in seen:
 					continue
 
+				# Add node to list of seen nodes.
 				seen.add(node)
+
+				# Recursively find all accepting node and add them to the set.
 				lasts |= node._get_lasts(seen)
 
 		return lasts
