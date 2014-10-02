@@ -27,16 +27,18 @@ To use this, you just need to do the following:
 >>> # Pre-compiled version (recommended).
 >>> r = redone.compile(pattern)
 >>> r.match(string)
-# => True or False
+>>> r.fullmatch(string)
+>>> r.search(string)
 >>>
 >>> # On-the-fly version.
 >>> redone.match(pattern, string)
-# => True or False
+>>> redone.fullmatch(pattern, string)
+>>> redone.search(pattern, string)
 ```
 
 The following features are still "in the works":
-* "Standard" regex matching (start to right-most).
-* Unanchored regex matching (left-most to right-most).
+* Proper UTF-8 support (the regex alphabet only includes `string.printable`).
+* Flags (mainly case insensitivity).
 * Submatch extraction.
 * Counted repetition (`<elem>{start,end}`)
 * Assertions (`^`, `$`, `\b` and the like).
