@@ -33,7 +33,8 @@ def _bench_re(size):
 	STRING = "a" * size
 
 	start = time.time()
-	re.fullmatch(PATTERN, STRING)
+	matcher = re.compile(PATTERN)
+	matcher.fullmatch(STRING)
 	end = time.time()
 
 	return end - start
@@ -44,7 +45,7 @@ def _bench_redone(size):
 
 	start = time.time()
 	matcher = redone.compile(PATTERN)
-	matcher.match(STRING)
+	matcher.fullmatch(STRING)
 	end = time.time()
 
 	return end - start
