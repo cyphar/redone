@@ -20,41 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import conv
-from . import parser
-from . import regex
-
-__all__ = ["compile", "match"]
-
-def _compile(pattern):
-	# XXX: The current conversion operation isn't properly optimised, so it isn't
-	#      run by default.
-
-	graph = parser._parse(pattern)
-	#graph = conv.nfa2dfa(graph)
-
-	return regex.RegexMatcher(graph)
-
-def compile(pattern):
+class FSANode(object):
 	"""
-	Compile a regular expression into a RegexMatcher which can be used to match
-	any given string.
+	Base class for both DFA and NFA nodes.
 	"""
 
-	return _compile(pattern)
+	def accepts(self, string):
+		raise NotImplementedError
 
-def match(pattern, string):
-	"""
-	Partial matches a given string against a given regex pattern. It returns either
-	the slice of the partial match or None if not matched.
-	"""
-
-	return _compile(pattern).match(string)
-
-def fullmatch(pattern, string):
-	"""
-	Fully matches a given string against a given regex pattern. It returns either
-	the slice of the match (The given string) or None if not matched.
-	"""
-
-	return _compile(pattern).fullmatch(string)
+	def add_edge(self, label, node):
+		raise NotImplementedError

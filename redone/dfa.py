@@ -20,12 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+from . import fsa
+
 
 class DFAException(Exception):
 	pass
 
 
-class DFANode(object):
+class DFANode(fsa.FSANode):
 	"""
 	Represents a node or state in a DFA graph. Due to the properties of directed
 	graphs, *any* valid NFA node also describes a valid NFA graph.

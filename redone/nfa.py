@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import functools
+from . import fsa
 
 EPSILON_EDGE = ""
 
@@ -92,7 +93,7 @@ class NFAException(Exception):
 	pass
 
 
-class NFANode(object):
+class NFANode(fsa.FSANode):
 	"""
 	Represents a node or state in an NFA graph. Due to the properties of directed
 	graphs, *any* valid NFA node also describes a valid NFA graph.
