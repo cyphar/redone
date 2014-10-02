@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 from . import regex
+from . import conv
 
 __all__ = ["compile", "match"]
 
@@ -34,6 +35,10 @@ class RegexMatcher(object):
 		self._graph = graph
 
 	def match(self, string):
+		"""
+		Wraps the internal structure's matching methods.
+		"""
+
 		return self._graph.accepts(string)
 
 def compile(pattern):
@@ -42,14 +47,23 @@ def compile(pattern):
 	any given string.
 	"""
 
-	graph = regex.compile_regex(pattern)
-	matcher = RegexMatcher(graph)
+	# XXX: The current conversion operation isn't properly optimised, so it isn't
+	#      run by default.
 
-	return matcher
+	graph = regex._compile(pattern)
+	#graph = conv.nfa2dfa(graph)
+
+	return RegexMatcher(graph)
 
 def match(pattern, string):
 	"""
 	Matches a given string against a given regex pattern.
 	"""
 
-	return regex.compile_regex(pattern).accepts(string)
+	# XXX: The current conversion operation isn't properly optimised, so it isn't
+	#      run by default.
+
+	graph = regex._compile(pattern)
+	#graph = conv.nfa2dfa(graph)
+
+	return graph.accepts(string)
