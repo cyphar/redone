@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# Benchmark the pathalogical regular expression as defined here:
+# Benchmark the pathological regular expression as defined here:
 # http://swtch.com/~rsc/regexp/regexp1.html
 
 import time
@@ -51,7 +51,7 @@ def _bench_redone(size):
 	return end - start
 
 def bench(bench=29):
-	print("[*] benchmark: pathalogical")
+	print("[*] benchmark: pathological")
 
 	delta = _bench_re(bench)
 	print("[+] stdlib: n=%d -- %.16f seconds" % (bench, delta))

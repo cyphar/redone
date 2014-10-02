@@ -20,10 +20,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import bench_pathological
+from .bench import pathological
 
 def run_bench():
-	bench_pathological.bench(bench=25)
+	pathological.bench(bench=25)
 
 def run_test():
 	pass
