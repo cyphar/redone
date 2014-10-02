@@ -33,7 +33,7 @@ def _bench_re(size):
 	STRING = "a" * size
 
 	start = time.time()
-	re.match(PATTERN, STRING)
+	re.fullmatch(PATTERN, STRING)
 	end = time.time()
 
 	return end - start
