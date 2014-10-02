@@ -39,14 +39,30 @@ class RegexMatcher(object):
 		Wraps the internal structure's matching methods.
 		"""
 
-		return self._graph.accepts(string)
+		start = 0
+		end = self._graph.accepts(string)
 
-def compile(pattern):
-	"""
-	Compile a regular expression into a RegexMatcher which can be used to match
-	any given string.
-	"""
+		# No match.
+		if end < 0:
+			return None
 
+		return string[start:end]
+
+	def fullmatch(self, string):
+		"""
+		Wraps the internal structure's full matching methods.
+		"""
+
+		start = 0
+		end = self._graph.accepts(string)
+
+		# Incomplete match.
+		if end != len(string):
+			return None
+
+		return string[start:end]
+
+def _compile(oattern):
 	# XXX: The current conversion operation isn't properly optimised, so it isn't
 	#      run by default.
 
@@ -55,15 +71,26 @@ def compile(pattern):
 
 	return RegexMatcher(graph)
 
+def compile(pattern):
+	"""
+	Compile a regular expression into a RegexMatcher which can be used to match
+	any given string.
+	"""
+
+	return _compile(pattern)
+
 def match(pattern, string):
 	"""
-	Matches a given string against a given regex pattern.
+	Partial matches a given string against a given regex pattern. It returns either
+	the slice of the partial match or None if not matched.
 	"""
 
-	# XXX: The current conversion operation isn't properly optimised, so it isn't
-	#      run by default.
+	return _compile(pattern).match(string)
 
-	graph = regex._compile(pattern)
-	#graph = conv.nfa2dfa(graph)
+def fullmatch(pattern, string):
+	"""
+	Fully matches a given string against a given regex pattern. It returns either
+	the slice of the match (The given string) or None if not matched.
+	"""
 
-	return graph.accepts(string)
+	return _compile(pattern).fullmatch(string)

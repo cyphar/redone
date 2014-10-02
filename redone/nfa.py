@@ -20,7 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import collections
 import functools
 
 EPSILON_EDGE = ""
@@ -165,23 +164,29 @@ class NFANode(object):
 
 	def accepts(self, string):
 		"""
-		Returns true iff. the NFANode graph (where the current state is the start
-		node) will consume the given string and end on an accepting node.
+		Returns the right-most index of the given string which, when consumed by the
+		NFA graph, ends on an accepting node. If no such index exists, accepts returns
+		-1.
 		"""
 
 		states = self._epsilon_closure()
+		end = -1
 
-		for token in string:
+		for index, token in enumerate(string):
 			next_states = _moves(states, token)
+
+			# Landed on an accepting set of states.
+			if _accepts(next_states):
+				end = index + 1
 
 			# If there are no next states, you cannot possibly match it.
 			# XXX: This might need to be remove to allow for partial matches.
 			if not next_states:
-				return False
+				break
 
 			states = next_states
 
-		return _accepts(states)
+		return end
 
 	def _get_lasts(self, seen=None):
 		"""
