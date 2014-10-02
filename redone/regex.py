@@ -39,25 +39,39 @@ class RegexMatcher(object):
 		Wraps the internal structure's matching methods.
 		"""
 
-		start = 0
 		end = self._graph.accepts(string)
 
 		# No match.
 		if end < 0:
 			return None
 
-		return string[start:end]
+		return string[:end]
 
 	def fullmatch(self, string):
 		"""
 		Wraps the internal structure's full matching methods.
 		"""
 
-		start = 0
 		end = self._graph.accepts(string)
 
 		# Incomplete match.
 		if end != len(string):
 			return None
 
-		return string[start:end]
+		return string[:end]
+
+	def search(self, string):
+		"""
+		Wraps the internal structure's searching methods.
+		"""
+
+		start = delta = -1
+
+		while delta < 0 and len(string) > start:
+			start += 1
+			delta = self._graph.accepts(string[start:])
+
+		if delta < 0:
+			return None
+
+		return string[start:start+delta]

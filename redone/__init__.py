@@ -37,24 +37,42 @@ def _compile(pattern):
 
 def compile(pattern):
 	"""
-	Compile a regular expression into a RegexMatcher which can be used to match
-	any given string.
+	Compile the given regular expression into a RegexMatcher which can be used to
+	run regex operations on any given string without needing to recompile the
+	expression.
 	"""
 
 	return _compile(pattern)
 
 def match(pattern, string):
 	"""
-	Partial matches a given string against a given regex pattern. It returns either
-	the slice of the partial match or None if not matched.
+	Partial matches the given string against the given regex pattern. It returns
+	either the slice of the partial match or None if not matched.
 	"""
+
+	if isinstance(pattern, regex.RegexMatcher):
+		return pattern.match(string)
 
 	return _compile(pattern).match(string)
 
 def fullmatch(pattern, string):
 	"""
 	Fully matches a given string against a given regex pattern. It returns either
-	the slice of the match (The given string) or None if not matched.
+	the slice of the match (the given string) or None if not matched.
 	"""
 
+	if isinstance(pattern, regex.RegexMatcher):
+		return pattern.fullmatch(string)
+
 	return _compile(pattern).fullmatch(string)
+
+def search(pattern, string):
+	"""
+	Searches the given string for a match against the given regex pattern. It
+	returns either the slice of the left-most match or None if there was no match.
+	"""
+
+	if isinstance(pattern, regex.RegexMatcher):
+		return pattern.search(string)
+
+	return _compile(pattern).search(string)
