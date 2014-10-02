@@ -53,8 +53,13 @@ The following features are likely *not* to be implemented:
 
 ## Warnings ##
 * This was made in order to prove a point (and as a programming exercise).
-  Python's mantra is that it is "fast enough". It is possible to argue that
-  using the well-tested `re` module is *much safer* than using an implementation
-  some random on the internet wrote, and that the speed issue isn't a big deal
-  on most regular expressions.
+  Python's mantra is that it is "fast enough", so the backtracking approach used
+  by `re` seems to match that. Also, I'd argue that using the well-tested `re`
+  module is *much safer* than using an implementation some random on the
+  internet wrote, and that the speed issue isn't a big deal on most regular
+  expressions.
+* While finite state automata are *theoretically* faster than backtracking, in
+  practice, the C code written is better optimised for common patterns and is
+  better tested. That doesn't mean that the `re` module doesn't suffer from the
+  "perl problem", it just means that (in most usecases) that isn't an issue.
 * Not suitable for programmers under the age of 3.
