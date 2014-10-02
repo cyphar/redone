@@ -41,7 +41,7 @@ def nfa2dfa(graph):
 
 	# Get the set of initial states and the initial DFA node.
 	states = frozenset(graph._epsilon_closure())
-	new_graph = dfa.DFANode(tag=states, accept=nfa._accept(states))
+	new_graph = dfa.DFANode(tag=states, accept=nfa._accepts(states))
 
 	# Sink -- where all edges go to die.
 	sink = dfa.DFANode(tag="sink", accept=False)
@@ -59,8 +59,8 @@ def nfa2dfa(graph):
 		# Ensure that each node has an edge for every token in the alphabet.
 		for token in constants.ALPHABET:
 			# Get set of states which are occupied after consuming the token.
-			s = nfa._move(states, token)
-			s = frozenset(nfa._epsilon_closure(s))
+			s = nfa._moves(states, token)
+			s = frozenset(nfa._epsilon_closures(s))
 
 			# No states -- just forward to the sink.
 			if not s:
@@ -69,7 +69,7 @@ def nfa2dfa(graph):
 
 			# New set of NFA states -- create a new DFA node to describe it.
 			if s not in seen:
-				node = dfa.DFANode(tag=s, accept=nfa._accept(s))
+				node = dfa.DFANode(tag=s, accept=nfa._accepts(s))
 				todo.append(node)
 				seen[s] = node
 

@@ -20,9 +20,39 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections
+import functools
+
 EPSILON_EDGE = ""
 
-def _epsilon_closure(states):
+
+def memoise(func):
+	cache = {}
+
+	@functools.wraps(func)
+	def wrapper(*args, **kwargs):
+		items = sorted(kwargs.items())
+		key = (args, tuple(items))
+
+		if not key:
+			return func(*args, **kwargs)
+
+		# XXX: *REALLY* hacky way to marshal large cyclic and recursive structures.
+		#      `pickle` and `cPickle` don't deal with this well at all.
+
+		# TODO: REPLACE THIS NAO!
+		key = repr(key)
+
+		if key in cache:
+			return cache[key]
+
+		ret = cache[key] = func(*args, **kwargs)
+		return ret
+
+	return wrapper
+
+@memoise
+def _epsilon_closures(states):
 	"""
 	For a given set of NFA node states, return a set that describes the epsilon
 	closure of all of the given states.
@@ -35,7 +65,8 @@ def _epsilon_closure(states):
 
 	return epsilons
 
-def _move(states, token):
+@memoise
+def _moves(states, token):
 	"""
 	For a given set of NFA node states, return a set that describes the states
 	occupied after transitioning across all edges labeled with the given token.
@@ -48,7 +79,8 @@ def _move(states, token):
 
 	return moved
 
-def _accept(states):
+@memoise
+def _accepts(states):
 	"""
 	For a given set of NFA node states, return true if any of the given states
 	are accepting nodes (otherwise return false).
@@ -112,7 +144,8 @@ class NFANode(object):
 			states |= state._edges.get(token, set())
 
 		# Get all epsilon closures for the given states.
-		return _epsilon_closure(states)
+		states = _epsilon_closures(states)
+		return states
 
 	def add_edge(self, label, node):
 		"""
@@ -139,7 +172,7 @@ class NFANode(object):
 		states = self._epsilon_closure()
 
 		for token in string:
-			next_states = _move(states, token)
+			next_states = _moves(states, token)
 
 			# If there are no next states, you cannot possibly match it.
 			# XXX: This might need to be remove to allow for partial matches.
@@ -148,7 +181,7 @@ class NFANode(object):
 
 			states = next_states
 
-		return _accept(states)
+		return _accepts(states)
 
 	def _get_lasts(self, seen=None):
 		"""
@@ -194,6 +227,3 @@ class NFANode(object):
 		for last in lasts:
 			last._accept = False
 			last.add_edge(label, node)
-
-if __name__ == "__main__":
-	pass
