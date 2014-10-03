@@ -22,10 +22,19 @@
 
 from . import nfa
 from . import dfa
+from . import utils
 from . import constants
 
-# TODO(cyphar): Make the conversion faster (it makes the benchmarks *slower*
-#               than the standard library).
+@utils.memoise
+def _all_edges(states):
+	"Get all edges from all states."
+
+	tokens = set()
+
+	for state in states:
+		tokens |= set(key for key, value in state._edges.items() if key != nfa.EPSILON_EDGE)
+
+	return tokens
 
 def nfa2dfa(graph):
 	"""
@@ -56,8 +65,11 @@ def nfa2dfa(graph):
 		todo_node = todo.pop()
 		states = todo_node._tag
 
-		# Ensure that each node has an edge for every token in the alphabet.
-		for token in constants.ALPHABET:
+		# Add sink node.
+		todo_node._sink = sink
+
+		# Ensure that each node has an edge the is in on of each of the states.
+		for token in _all_edges(states):
 			# Get set of states which are occupied after consuming the token.
 			s = nfa._moves(states, token)
 			s = frozenset(nfa._epsilon_closures(s))
