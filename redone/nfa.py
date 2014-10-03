@@ -20,8 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import utils
 from . import fsa
+from . import utils
 
 EPSILON_EDGE = ""
 
@@ -154,8 +154,7 @@ class NFANode(fsa.FSANode):
 			if _accepts(next_states):
 				end = index + 1
 
-			# If there are no next states, you cannot possibly match it.
-			# XXX: This might need to be remove to allow for partial matches.
+			# If there are no next states, we cannot proceed further.
 			if not next_states:
 				break
 
