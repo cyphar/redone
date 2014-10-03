@@ -37,18 +37,18 @@ def _bench_re(size):
 	compile_end = time.time()
 
 	compile_delta = compile_end - compile_start
-	print("[+] re:     n=%d -- compile: %.16f seconds" % (size, compile_delta))
+	print("[+] re:     n=%d -- compile:    %.16f seconds" % (size, compile_delta))
 
 	match_start = time.time()
 	assert matcher.fullmatch(STRING).group() == STRING
 	match_end = time.time()
 
 	match_delta = match_end - match_start
-	print("[+] re:     n=%d -- match:   %.16f seconds" % (size, match_delta))
+	print("[+] re:     n=%d -- match:      %.16f seconds" % (size, match_delta))
 
 	return compile_delta + match_delta
 
-def _bench_redone(size):
+def _bench_redone_compile(size):
 	PATTERN = ("a?" * size) + ("a" * size)
 	STRING = "a" * size
 
@@ -57,27 +57,41 @@ def _bench_redone(size):
 	compile_end = time.time()
 
 	compile_delta = compile_end - compile_start
-	print("[+] redone: n=%d -- compile: %.16f seconds" % (size, compile_delta))
+	print("[+] redone: n=%d -- compile:    %.16f seconds" % (size, compile_delta))
 
 	match_start = time.time()
 	assert matcher.fullmatch(STRING) == STRING
 	match_end = time.time()
 
 	match_delta = match_end - match_start
-	print("[+] redone: n=%d -- match:   %.16f seconds" % (size, match_delta))
+	print("[+] redone: n=%d -- comp match: %.16f seconds" % (size, match_delta))
 
 	return compile_delta + match_delta
+
+def _bench_redone_otf(size):
+	PATTERN = ("a?" * size) + ("a" * size)
+	STRING = "a" * size
+
+	match_start = time.time()
+	assert redone.fullmatch(PATTERN, STRING) == STRING
+	match_end = time.time()
+
+	match_delta = match_end - match_start
+	print("[+] redone: n=%d -- otf match:  %.16f seconds" % (size, match_delta))
+
+	return match_delta
 
 def bench(bench=29):
 	print("[*] benchmark: pathological")
 
-	print()
 	delta = _bench_re(bench)
-	print("[-] re:     n=%d -- total:   %.16f seconds" % (bench, delta))
+	print("[+] re:     n=%d -- total:      %.16f seconds" % (bench, delta))
 
-	print()
-	delta = _bench_redone(bench)
-	print("[-] redone: n=%d -- total:   %.16f seconds" % (bench, delta))
+	delta = _bench_redone_compile(bench)
+	print("[+] redone: n=%d -- comp total: %.16f seconds" % (bench, delta))
+
+	delta = _bench_redone_otf(bench)
+	print("[+] redone: n=%d -- otf total:  %.16f seconds" % (bench, delta))
 
 if __name__ == "__main__":
 	bench_pathological()

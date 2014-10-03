@@ -25,5 +25,7 @@ from .bench import pathological
 def run_bench():
 	pathological.bench(bench=25)
 
+from .test import simple
+
 def run_test():
-	pass
+	simple.test()
