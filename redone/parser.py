@@ -303,7 +303,7 @@ def _parse(pattern):
 
 	pattern = _optimise(pattern)
 
-	if not pattern:
+	if pattern is None:
 		raise RegexParseException("Error encountered when optimising pattern.")
 
 	tokens = list(pattern)
