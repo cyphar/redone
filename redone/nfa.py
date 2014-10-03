@@ -20,10 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections
+
 from . import fsa
 from . import utils
 
 EPSILON_EDGE = ""
+
+CACHE_MOVE = 0
 
 @utils.memoise
 def _epsilon_closures(states):
@@ -78,28 +82,46 @@ class NFANode(fsa.FSANode):
 		self._accept = accept
 		self._edges = {}
 
+		# Used to check for cache invalidation.
+		self._canary = {
+			CACHE_MOVE: {},
+		}
+
+		# The actual cache.
+		self._cache = {
+			CACHE_MOVE: {},
+		}
+
 	def __repr__(self):
 		return "<NFANode(tag=%r, accept=%r) at 0x%x>" % (self._tag, self._accept, id(self))
 
-	def _epsilon_closure(self, states=None):
+	def _epsilon_closure(self):
 		"""
 		Returns the set of all states connected via epsilon edges to the current
 		state (as well as including the current state).
 		"""
 
-		if not states:
-			states = {self}
+		# Basically a breadth-first search because it removes the overhead of recursive
+		# calls. But we aren't searching, just storing all nodes found in the path.
 
-		for node in self._edges.get(EPSILON_EDGE, set()):
-			# Avoid infinite recursion.
-			if node in states:
+		states = {self}
+		todo = collections.deque([self])
+
+		# Still more epsilons to find.
+		while todo:
+			current = todo.pop()
+
+			# Get set of epsilon transitions from current node.
+			epsilons = current._edges.get(EPSILON_EDGE)
+
+			if not epsilons:
 				continue
 
-			# Add found node to set of states.
-			states.add(node)
-
-			# Recursively calculate its epsilon closure and add it to the set of states.
-			states |= node._epsilon_closure(states)
+			# Add all nodes which haven't already been seen to the list of states and
+			# to the list of nodes left to search.
+			for node in epsilons.difference(states):
+				todo.append(node)
+				states.add(node)
 
 		return states
 
@@ -111,6 +133,10 @@ class NFANode(fsa.FSANode):
 		the given token.
 		"""
 
+		# Only fetch from cache if no changes since last cache write.
+		if self._canary[CACHE_MOVE].get(token) and token in self._cache[CACHE_MOVE]:
+			return self._cache[CACHE_MOVE][token]
+
 		states = set()
 
 		# Get set of states from epsilons which can consume the given token.
@@ -119,6 +145,11 @@ class NFANode(fsa.FSANode):
 
 		# Get all epsilon closures for the given states.
 		states = _epsilon_closures(states)
+
+		# Add to cache.
+		self._canary[CACHE_MOVE][token] = True
+		self._cache[CACHE_MOVE][token] = states
+
 		return states
 
 	def add_edge(self, label, node):
@@ -135,6 +166,11 @@ class NFANode(fsa.FSANode):
 		if label not in self._edges:
 			self._edges[label] = set()
 
+		# New non-epsilon edges break the move cache.
+		if label != EPSILON_EDGE:
+			self._canary[CACHE_MOVE][label] = False
+
+		# Add edge to given node with given label.
 		self._edges[label].add(node)
 
 	def accepts(self, string):
@@ -168,26 +204,26 @@ class NFANode(fsa.FSANode):
 		the current node.
 		"""
 
-		if not seen:
-			seen = {self}
+		# Basically a breadth-first search because it removes the overhead of recursive
+		# calls. But we aren't searching, just storing all nodes found in the path.
 
 		lasts = set()
 
-		# If current node is an accepting node, it is  a "last".
-		if self._accept:
-			lasts.add(self)
+		seen = {self}
+		todo = collections.deque([self])
 
-		for _, nodes in self._edges.items():
-			for node in nodes:
-				# Avoid infinite recursion.
-				if node in seen:
-					continue
+		# Still more nodes to find.
+		while todo:
+			current = todo.pop()
 
-				# Add node to list of seen nodes.
-				seen.add(node)
+			if current._accept:
+				lasts.add(current)
 
-				# Recursively find all accepting node and add them to the set.
-				lasts |= node._get_lasts(seen)
+			# Get set of epsilon transitions from current node.
+			for _, nodes in current._edges.items():
+				for node in nodes.difference(seen):
+					todo.append(node)
+					seen.add(node)
 
 		return lasts
 
@@ -203,6 +239,7 @@ class NFANode(fsa.FSANode):
 		if not lasts:
 			raise NFAException("Cannot patch an NFA graph with no accepting nodes.")
 
+		# Update all lasts.
 		for last in lasts:
 			last._accept = False
 			last.add_edge(label, node)

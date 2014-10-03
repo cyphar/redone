@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections
+
 from . import fsa
 
 
@@ -36,12 +38,15 @@ class DFANode(fsa.FSANode):
 	def __init__(self, tag="", accept=False):
 		self._tag = tag
 		self._accept = accept
-		self._edges = {}
 
 		self._sink = None
+		self._edges = collections.defaultdict(self._get_sink)
 
 	def __repr__(self):
 		return "<DFANode(tag=%r, accept=%r) at 0x%x>" % (self._tag, self._accept, id(self))
+
+	def _get_sink(self):
+		return self._sink
 
 	def _move(self, token):
 		"""
@@ -50,12 +55,8 @@ class DFANode(fsa.FSANode):
 		described and _move will raise a DFAException.
 		"""
 
-		if token not in self._edges:
-			# Default to sink.
-			if self._sink is not None:
-				return self._sink
-
-			# Oops!
+		# Oops!
+		if self._edges[token] is None:
 			raise DFAException("Non-deterministic DFA node (missing edge '%s')." % token)
 
 		return self._edges[token]
