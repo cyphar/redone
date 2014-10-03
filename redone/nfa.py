@@ -25,6 +25,8 @@ from . import utils
 
 EPSILON_EDGE = ""
 
+CACHE_MOVE = 0
+
 @utils.memoise
 def _epsilon_closures(states):
 	"""
@@ -78,6 +80,16 @@ class NFANode(fsa.FSANode):
 		self._accept = accept
 		self._edges = {}
 
+		# Used to check for cache invalidation.
+		self._canary = {
+			CACHE_MOVE: {},
+		}
+
+		# The actual cache.
+		self._cache = {
+			CACHE_MOVE: {},
+		}
+
 	def __repr__(self):
 		return "<NFANode(tag=%r, accept=%r) at 0x%x>" % (self._tag, self._accept, id(self))
 
@@ -90,11 +102,8 @@ class NFANode(fsa.FSANode):
 		if not states:
 			states = {self}
 
-		for node in self._edges.get(EPSILON_EDGE, set()):
-			# Avoid infinite recursion.
-			if node in states:
-				continue
-
+		epsilons = self._edges.get(EPSILON_EDGE, set())
+		for node in epsilons.difference(states):
 			# Add found node to set of states.
 			states.add(node)
 
@@ -111,6 +120,10 @@ class NFANode(fsa.FSANode):
 		the given token.
 		"""
 
+		# Only fetch from cache if no changes since last cache write.
+		if self._canary[CACHE_MOVE].get(token) and token in self._cache[CACHE_MOVE]:
+			return self._cache[CACHE_MOVE][token]
+
 		states = set()
 
 		# Get set of states from epsilons which can consume the given token.
@@ -119,6 +132,11 @@ class NFANode(fsa.FSANode):
 
 		# Get all epsilon closures for the given states.
 		states = _epsilon_closures(states)
+
+		# Add to cache.
+		self._canary[CACHE_MOVE][token] = True
+		self._cache[CACHE_MOVE][token] = states
+
 		return states
 
 	def add_edge(self, label, node):
@@ -135,6 +153,11 @@ class NFANode(fsa.FSANode):
 		if label not in self._edges:
 			self._edges[label] = set()
 
+		# New non-epsilon edges break the move cache.
+		if label != EPSILON_EDGE:
+			self._canary[CACHE_MOVE][label] = False
+
+		# Add edge to given node with given label.
 		self._edges[label].add(node)
 
 	def accepts(self, string):
@@ -173,16 +196,12 @@ class NFANode(fsa.FSANode):
 
 		lasts = set()
 
-		# If current node is an accepting node, it is  a "last".
+		# If current node is an accepting node, it is a "last".
 		if self._accept:
 			lasts.add(self)
 
 		for _, nodes in self._edges.items():
-			for node in nodes:
-				# Avoid infinite recursion.
-				if node in seen:
-					continue
-
+			for node in nodes.difference(seen):
 				# Add node to list of seen nodes.
 				seen.add(node)
 
@@ -203,6 +222,7 @@ class NFANode(fsa.FSANode):
 		if not lasts:
 			raise NFAException("Cannot patch an NFA graph with no accepting nodes.")
 
+		# Update all lasts.
 		for last in lasts:
 			last._accept = False
 			last.add_edge(label, node)
