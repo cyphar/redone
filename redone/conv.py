@@ -25,9 +25,6 @@ from . import dfa
 from . import utils
 from . import constants
 
-# TODO(cyphar): Make the conversion faster (it makes the benchmarks *slower*
-#               than the standard library).
-
 @utils.memoise
 def _all_edges(states):
 	"Get all edges from all states."
