@@ -40,7 +40,7 @@ def _bench_re(size):
 	print("[+] re:     n=%d -- compile: %.16f seconds" % (size, compile_delta))
 
 	match_start = time.time()
-	matcher.fullmatch(STRING)
+	assert matcher.fullmatch(STRING).group() == STRING
 	match_end = time.time()
 
 	match_delta = match_end - match_start
@@ -60,7 +60,7 @@ def _bench_redone(size):
 	print("[+] redone: n=%d -- compile: %.16f seconds" % (size, compile_delta))
 
 	match_start = time.time()
-	matcher.fullmatch(STRING)
+	assert matcher.fullmatch(STRING) == STRING
 	match_end = time.time()
 
 	match_delta = match_end - match_start
