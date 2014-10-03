@@ -20,6 +20,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import collections
+
 from . import fsa
 from . import utils
 
@@ -93,22 +95,33 @@ class NFANode(fsa.FSANode):
 	def __repr__(self):
 		return "<NFANode(tag=%r, accept=%r) at 0x%x>" % (self._tag, self._accept, id(self))
 
-	def _epsilon_closure(self, states=None):
+	def _epsilon_closure(self):
 		"""
 		Returns the set of all states connected via epsilon edges to the current
 		state (as well as including the current state).
 		"""
 
-		if not states:
-			states = {self}
+		# Basically a breadth-first search because it removes the overhead of recursive
+		# calls. But we aren't searching, just storing all nodes found in the path.
 
-		epsilons = self._edges.get(EPSILON_EDGE, set())
-		for node in epsilons.difference(states):
-			# Add found node to set of states.
-			states.add(node)
+		states = {self}
+		todo = collections.deque([self])
 
-			# Recursively calculate its epsilon closure and add it to the set of states.
-			states |= node._epsilon_closure(states)
+		# Still more epsilons to find.
+		while todo:
+			current = todo.pop()
+
+			# Get set of epsilon transitions from current node.
+			epsilons = current._edges.get(EPSILON_EDGE)
+
+			if not epsilons:
+				continue
+
+			# Add all nodes which haven't already been seen to the list of states and
+			# to the list of nodes left to search.
+			for node in epsilons.difference(states):
+				todo.append(node)
+				states.add(node)
 
 		return states
 
@@ -191,22 +204,26 @@ class NFANode(fsa.FSANode):
 		the current node.
 		"""
 
-		if not seen:
-			seen = {self}
+		# Basically a breadth-first search because it removes the overhead of recursive
+		# calls. But we aren't searching, just storing all nodes found in the path.
 
 		lasts = set()
 
-		# If current node is an accepting node, it is a "last".
-		if self._accept:
-			lasts.add(self)
+		seen = {self}
+		todo = collections.deque([self])
 
-		for _, nodes in self._edges.items():
-			for node in nodes.difference(seen):
-				# Add node to list of seen nodes.
-				seen.add(node)
+		# Still more nodes to find.
+		while todo:
+			current = todo.pop()
 
-				# Recursively find all accepting node and add them to the set.
-				lasts |= node._get_lasts(seen)
+			if current._accept:
+				lasts.add(current)
+
+			# Get set of epsilon transitions from current node.
+			for _, nodes in current._edges.items():
+				for node in nodes.difference(seen):
+					todo.append(node)
+					seen.add(node)
 
 		return lasts
 
