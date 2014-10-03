@@ -5,7 +5,7 @@ A correct implementation of regular expressions, using finite state automata
 rather than backtracking.
 
 ## tl;dr ##
-All regex implementations (except for GNU grep, GNU awk and a few others) use
+Most regex implementations (except for GNU grep, GNU awk and a few others) use
 backtracking, which (while adding support for backreferences) massively reduces
 the efficiency of the implementation. Even the best backtracking implementations
 have `O(2^n)` time complexity in several cases.
@@ -13,7 +13,11 @@ have `O(2^n)` time complexity in several cases.
 On the other hand, by using finite state automata, regular expression matching
 can have `O(n)` time complexity (or possibly superlinear, if the implementation
 uses NFAs and doesn't cache them to produce DFAs). In either case, the
-differences [can be quite drastic](http://swtch.com/~rsc/regexp/regexp1.html).
+differences [can be quite drastic](http://swtch.com/~rsc/regexp/regexp1.html):
+
+![Source: Russ Cox / rsc@swtch.com 2007][russ_cox_graph]
+
+[russ_cox_graph]: http://pdos.csail.mit.edu/~rsc/regexp-img/grep1p.png
 
 ## Usage ##
 To use this, you just need to do the following:
