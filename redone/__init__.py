@@ -24,14 +24,16 @@ from . import conv
 from . import parser
 from . import regex
 
-__all__ = ["compile", "match"]
+__all__ = ["compile", "match", "fullmatch", "search"]
 
-def _compile(pattern):
+def _compile(pattern, _convert=False):
 	# XXX: The current conversion operation isn't properly optimised, so it isn't
 	#      run by default.
 
 	graph = parser._parse(pattern)
-	#graph = conv.nfa2dfa(graph)
+
+	if _convert:
+		graph = conv.nfa2dfa(graph)
 
 	return regex.RegexMatcher(graph)
 
@@ -42,7 +44,7 @@ def compile(pattern):
 	expression.
 	"""
 
-	return _compile(pattern)
+	return _compile(pattern, _convert=False)
 
 def match(pattern, string):
 	"""
@@ -53,7 +55,11 @@ def match(pattern, string):
 	if isinstance(pattern, regex.RegexMatcher):
 		return pattern.match(string)
 
-	return _compile(pattern).match(string)
+	# Avoid overhead of converting the NFA (one-time use only).
+	reo = _compile(pattern, _convert=False)
+
+	# Forward to RegexMatcher.
+	return reo.match(string)
 
 def fullmatch(pattern, string):
 	"""
@@ -64,7 +70,11 @@ def fullmatch(pattern, string):
 	if isinstance(pattern, regex.RegexMatcher):
 		return pattern.fullmatch(string)
 
-	return _compile(pattern).fullmatch(string)
+	# Avoid overhead of converting the NFA (one-time use only).
+	reo = _compile(pattern, _convert=False)
+
+	# Forward to RegexMatcher.
+	return reo.fullmatch(string)
 
 def search(pattern, string):
 	"""
@@ -75,4 +85,8 @@ def search(pattern, string):
 	if isinstance(pattern, regex.RegexMatcher):
 		return pattern.search(string)
 
-	return _compile(pattern).search(string)
+	# Avoid overhead of converting the NFA (one-time use only).
+	reo = _compile(pattern, _convert=False)
+
+	# Forward to RegexMatcher.
+	return reo.search(string)
