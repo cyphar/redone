@@ -32,32 +32,52 @@ def _bench_re(size):
 	PATTERN = ("a?" * size) + ("a" * size)
 	STRING = "a" * size
 
-	start = time.time()
+	compile_start = time.time()
 	matcher = re.compile(PATTERN)
-	matcher.fullmatch(STRING)
-	end = time.time()
+	compile_end = time.time()
 
-	return end - start
+	compile_delta = compile_end - compile_start
+	print("[+] re:     n=%d -- compile: %.16f seconds" % (size, compile_delta))
+
+	match_start = time.time()
+	matcher.fullmatch(STRING)
+	match_end = time.time()
+
+	match_delta = match_end - match_start
+	print("[+] re:     n=%d -- match:   %.16f seconds" % (size, match_delta))
+
+	return compile_delta + match_delta
 
 def _bench_redone(size):
 	PATTERN = ("a?" * size) + ("a" * size)
 	STRING = "a" * size
 
-	start = time.time()
+	compile_start = time.time()
 	matcher = redone.compile(PATTERN)
-	matcher.fullmatch(STRING)
-	end = time.time()
+	compile_end = time.time()
 
-	return end - start
+	compile_delta = compile_end - compile_start
+	print("[+] redone: n=%d -- compile: %.16f seconds" % (size, compile_delta))
+
+	match_start = time.time()
+	matcher.fullmatch(STRING)
+	match_end = time.time()
+
+	match_delta = match_end - match_start
+	print("[+] redone: n=%d -- match:   %.16f seconds" % (size, match_delta))
+
+	return compile_delta + match_delta
 
 def bench(bench=29):
 	print("[*] benchmark: pathological")
 
+	print()
 	delta = _bench_re(bench)
-	print("[+] stdlib: n=%d -- %.16f seconds" % (bench, delta))
+	print("[-] re:     n=%d -- total:   %.16f seconds" % (bench, delta))
 
+	print()
 	delta = _bench_redone(bench)
-	print("[+] redone: n=%d -- %.16f seconds" % (bench, delta))
+	print("[-] redone: n=%d -- total:   %.16f seconds" % (bench, delta))
 
 if __name__ == "__main__":
 	bench_pathological()
