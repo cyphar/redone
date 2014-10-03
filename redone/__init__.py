@@ -44,7 +44,7 @@ def compile(pattern):
 	expression.
 	"""
 
-	return _compile(pattern, _convert=False)
+	return _compile(pattern, _convert=True)
 
 def match(pattern, string):
 	"""

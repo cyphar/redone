@@ -38,6 +38,8 @@ class DFANode(fsa.FSANode):
 		self._accept = accept
 		self._edges = {}
 
+		self._sink = None
+
 	def __repr__(self):
 		return "<DFANode(tag=%r, accept=%r) at 0x%x>" % (self._tag, self._accept, id(self))
 
@@ -49,6 +51,11 @@ class DFANode(fsa.FSANode):
 		"""
 
 		if token not in self._edges:
+			# Default to sink.
+			if self._sink is not None:
+				return self._sink
+
+			# Oops!
 			raise DFAException("Non-deterministic DFA node (missing edge '%s')." % token)
 
 		return self._edges[token]

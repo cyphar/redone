@@ -20,38 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import functools
+from . import utils
 from . import fsa
 
 EPSILON_EDGE = ""
 
-
-def memoise(func):
-	cache = {}
-
-	@functools.wraps(func)
-	def wrapper(*args, **kwargs):
-		items = sorted(kwargs.items())
-		key = (args, tuple(items))
-
-		if not key:
-			return func(*args, **kwargs)
-
-		# XXX: *REALLY* hacky way to marshal large cyclic and recursive structures.
-		#      `pickle` and `cPickle` don't deal with this well at all.
-
-		# TODO: REPLACE THIS NAO!
-		key = repr(key)
-
-		if key in cache:
-			return cache[key]
-
-		ret = cache[key] = func(*args, **kwargs)
-		return ret
-
-	return wrapper
-
-@memoise
+@utils.memoise
 def _epsilon_closures(states):
 	"""
 	For a given set of NFA node states, return a set that describes the epsilon
@@ -65,7 +39,7 @@ def _epsilon_closures(states):
 
 	return epsilons
 
-@memoise
+@utils.memoise
 def _moves(states, token):
 	"""
 	For a given set of NFA node states, return a set that describes the states
@@ -79,7 +53,7 @@ def _moves(states, token):
 
 	return moved
 
-@memoise
+@utils.memoise
 def _accepts(states):
 	"""
 	For a given set of NFA node states, return true if any of the given states
