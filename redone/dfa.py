@@ -48,7 +48,7 @@ class DFANode(fsa.FSANode):
 	def _get_sink(self):
 		return self._sink
 
-	def _move(self, token):
+	def move(self, token):
 		"""
 		Returns the node which will consume the given token during the transition
 		from the current node. If no such node exists, then the DFA is not completely
@@ -89,7 +89,7 @@ class DFANode(fsa.FSANode):
 		end = -1
 
 		for index, token in enumerate(string):
-			next_state = state._move(token)
+			next_state = state.move(token)
 
 			# Landed on an accepting state.
 			if next_state._accept:

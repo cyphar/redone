@@ -44,6 +44,7 @@ CASES = {
 		# Non-matches.
 		"abbcde": None,
 		"bcd": None,
+		"a": None,
 		"": None,
 	},
 
@@ -67,6 +68,7 @@ CASES = {
 		# Non-matches.
 		"abbcde": None,
 		"bcd": None,
+		"a": None,
 		"": None,
 	},
 
@@ -90,6 +92,7 @@ CASES = {
 		# Non-matches.
 		"abbcde": None,
 		"bcd": None,
+		"a": None,
 		"": None,
 	},
 }

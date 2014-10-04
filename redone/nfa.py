@@ -53,7 +53,7 @@ def _moves(states, token):
 	moved = set()
 
 	for state in states:
-		moved |= state._move(token)
+		moved |= state.move(token)
 
 	return moved
 
@@ -125,18 +125,25 @@ class NFANode(fsa.FSANode):
 
 		return states
 
-	def _move(self, token):
+	def move(self, token):
 		"""
-		Returns the set of states which will consume the given token during the
-		transition. In other words, this will give you the set of states that you
-		inhabit after transitioning from the current state along all edges that accept
-		the given token.
+		Return the set of states inhabited after transitioning from the current state
+		along all edges that accept the given token (with epsilon closures).
 		"""
 
 		# Only fetch from cache if no changes since last cache write.
 		if self._canary[CACHE_MOVE].get(token) and token in self._cache[CACHE_MOVE]:
 			return self._cache[CACHE_MOVE][token]
 
+		states = self._move(token)
+
+		# Add to cache.
+		self._canary[CACHE_MOVE][token] = True
+		self._cache[CACHE_MOVE][token] = states
+
+		return states
+
+	def _move(self, token):
 		states = set()
 
 		# Get set of states from epsilons which can consume the given token.
@@ -145,11 +152,6 @@ class NFANode(fsa.FSANode):
 
 		# Get all epsilon closures for the given states.
 		states = _epsilon_closures(states)
-
-		# Add to cache.
-		self._canary[CACHE_MOVE][token] = True
-		self._cache[CACHE_MOVE][token] = states
-
 		return states
 
 	def add_edge(self, label, node):
@@ -166,8 +168,11 @@ class NFANode(fsa.FSANode):
 		if label not in self._edges:
 			self._edges[label] = set()
 
-		# New non-epsilon edges break the move cache.
-		if label != EPSILON_EDGE:
+		# New epsilon edges completely break the move cache, but other edges only
+		# break the cache for that specific label.
+		if label == EPSILON_EDGE:
+			self._canary[CACHE_MOVE] = {}
+		else:
 			self._canary[CACHE_MOVE][label] = False
 
 		# Add edge to given node with given label.

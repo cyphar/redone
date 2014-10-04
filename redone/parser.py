@@ -28,37 +28,15 @@ class RegexParseException(Exception):
 	pass
 
 
-class RegexParser(object):
+class Parser(object):
 	"""
-	An object used internally within redone in order to parse regular expressions
-	and convert them into the equivalent NFANode graph. This is an implementation
-	of a recursive descent parser which will parse valid regex.
+	Abstract parser class.
 	"""
 
-	# EBNF for 'redone' extended regex:
-	# <re>     ::= <simple> ( "|" <re> )?
-	# <simple> ::= <basic>+
-	# <basic>  ::= <elem> ("*" | "+" | "?")?
-	# <elem>   ::= "(" <re> ")"
-	# <elem>   ::= "[" "^"? <token>+ "]"
-	# <elem>   ::= "."
-	# <elem>   ::= <token>
-	# <token>  ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
-	# <token>  ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
-
-	ALPHABET = constants.ALPHABET
-	METACHARS = constants.METACHARS
-
-	def __init__(self, tokens, alphabet=None, metachars=None):
+	def __init__(self, tokens):
 		self._tokens = tokens
 		self._pos = 0
 		self._length = len(tokens)
-
-		if alphabet:
-			self.ALPHABET = set(alphabet)
-
-		if metachars:
-			self.METACHARS = set(metachars)
 
 	def end(self):
 		"""
@@ -83,6 +61,41 @@ class RegexParser(object):
 
 		if not self.end():
 			self._pos += num
+
+	def parse(self):
+		raise NotImplementedError
+
+class RegexParser(Parser):
+	"""
+	An object used internally within redone in order to parse regular expressions
+	and convert them into the equivalent NFANode graph. This is an implementation
+	of a recursive descent parser which will parse valid regex.
+	"""
+
+	# EBNF for 'redone' extended regex:
+	# <re>     ::= <simple> ( "|" <re> )?
+	# <simple> ::= <basic>+
+	# <basic>  ::= <elem> (<iter> | "*" | "+" | "?")?
+	# <iter>   ::= "{" <number> ("," <number>?)? "}"
+	# <number> ::= "0" | "1".."9" ("0".."9")*
+	# <elem>   ::= "(" <re> ")"
+	# <elem>   ::= "[" "^"? <token>+ "]"
+	# <elem>   ::= "."
+	# <elem>   ::= <token>
+	# <token>  ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <token>  ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+
+	ALPHABET = constants.ALPHABET
+	METACHARS = constants.METACHARS
+
+	def __init__(self, tokens, alphabet=None, metachars=None):
+		super().__init__(tokens)
+
+		if alphabet:
+			self.ALPHABET = set(alphabet)
+
+		if metachars:
+			self.METACHARS = set(metachars)
 
 	def _parse_char(self):
 		# Metacharacter Escapes
@@ -144,7 +157,6 @@ class RegexParser(object):
 					break
 
 				tokens.add(token)
-
 
 			if self.peek() != "]":
 				raise RegexParseException("Missing closing ']' in regex set.")
@@ -289,6 +301,7 @@ class RegexParser(object):
 			raise RegexParseException("Unknown error occurred.")
 
 		return graph
+
 
 def _optimise(pattern):
 	# TODO: Optimise and expand patterns.
