@@ -73,20 +73,23 @@ class RegexParser(Parser):
 	"""
 
 	# EBNF for 'redone' extended regex:
-	# <re>     ::= <simple> ( "|" <re> )?
-	# <simple> ::= <basic>+
-	# <basic>  ::= <elem> (<iter> | "*" | "+" | "?")?
-	# <iter>   ::= "{" <number> ("," <number>?)? "}"
-	# <number> ::= "0" | "1".."9" ("0".."9")*
-	# <elem>   ::= "(" <re> ")"
-	# <elem>   ::= "[" "^"? <token>+ "]"
-	# <elem>   ::= "."
-	# <elem>   ::= <token>
-	# <token>  ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
-	# <token>  ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <re>        ::= <simple> ( "|" <re> )?
+	# <simple>    ::= <basic>+
+	# <basic>     ::= <elem> (<iter> | "*" | "+" | "?")?
+	# <iter>      ::= "{" <number> ("," <number>?)? "}"
+	# <number>    ::= "0" | "1".."9" ("0".."9")*
+	# <elem>      ::= "(" <re> ")"
+	# <elem>      ::= "[" "^"? <set-token>+ "]"
+	# <elem>      ::= "."
+	# <elem>      ::= <token>
+	# <token>     ::= "\" ("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <token>     ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
+	# <set-token> ::= "\" ("[" | "]" | "\")
+	# <set-token> ::= ¬("[" | "]" | "\")
 
 	ALPHABET = constants.ALPHABET
 	METACHARS = constants.METACHARS
+	SETMETA = constants.SETMETA
 
 	def __init__(self, tokens, alphabet=None, metachars=None):
 		super().__init__(tokens)
@@ -97,7 +100,26 @@ class RegexParser(Parser):
 		if metachars:
 			self.METACHARS = set(metachars)
 
-	def _parse_char(self):
+	def _parse_set_token(self):
+		# Metacharacter Escapes
+		if self.peek() == "\\":
+			self.next()
+
+			token = self.peek()
+			self.next()
+
+			if token not in self.SETMETA:
+				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + token))
+
+			return token
+
+		elif self.peek() not in self.SETMETA:
+			token = self.peek()
+			self.next()
+
+			return token
+
+	def _parse_token(self):
 		# Metacharacter Escapes
 		if self.peek() == "\\":
 			self.next()
@@ -144,14 +166,14 @@ class RegexParser(Parser):
 				inverted = True
 				self.next()
 
-			token = self._parse_char()
+			token = self._parse_set_token()
 
 			if token is None:
 				raise RegexParseException("Empty regex set.")
 
 			tokens = {token}
 			while not self.end() and self.peek() != "]":
-				token = self._parse_char()
+				token = self._parse_set_token()
 
 				if token is None:
 					break
@@ -180,7 +202,7 @@ class RegexParser(Parser):
 
 		# All other characters.
 		else:
-			token = self._parse_char()
+			token = self._parse_token()
 
 			if token is None:
 				return None

@@ -24,3 +24,4 @@ import string
 
 ALPHABET = set(string.printable)
 METACHARS = {"^", ".", "*", "+", "?", "(", ")", "[", "]", "|", "\\"}
+SETMETA = {"[", "]", "\\"}
