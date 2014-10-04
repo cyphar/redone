@@ -22,83 +22,83 @@
 
 import redone
 
-PATTERN = "a?(b|bc|[de]*)*f+"
+PATTERN = r"[.*+?^)(\]\[}{\\abc]+"
 CASES = {
 	"match": {
 		# Full matches.
-		"abcdeeff": "abcdeeff",
-		"f": "f",
-		"df": "df",
-		"bcfff": "bcfff",
+		")}].[{(": ")}].[{(",
+		r"\][": r"\][",
+		"abc": "abc",
+		"*": "*",
+		"+": "+",
+		"?": "?",
+		"^": "^",
 
 		# Partial matches.
-		"abcdeeffxx": "abcdeeff",
-		"fxx": "f",
+		"*//*.*": "*",
+		"[[]]\"": "[[]]",
 
 		# Searches.
-		"aabbcddeef": None,
-		"xxabbcdeeff": None,
-		"axbcdeef": None,
-		"acff": None,
+		r"/\*//*.*": None,
+		"\"[[]]\"": None,
 
 		# Non-matches.
-		"abbcde": None,
-		"bcd": None,
-		"a": None,
+		"dde": None,
+		"><": None,
 		"": None,
 	},
 
 	"fullmatch": {
 		# Full matches.
-		"abcdeeff": "abcdeeff",
-		"f": "f",
-		"df": "df",
-		"bcfff": "bcfff",
+		")}].[{(": ")}].[{(",
+		r"\][": r"\][",
+		"abc": "abc",
+		"*": "*",
+		"+": "+",
+		"?": "?",
+		"^": "^",
 
 		# Partial matches.
-		"abcdeeffxx": None,
-		"fxx": None,
+		"*//*.*": None,
+		"[[]]\"": None,
 
 		# Searches.
-		"aabbcddeef": None,
-		"xxabbcdeeff": None,
-		"axbcdeef": None,
-		"acff": None,
+		r"/\*//*.*": None,
+		"\"[[]]\"": None,
 
 		# Non-matches.
-		"abbcde": None,
-		"bcd": None,
-		"a": None,
+		"dde": None,
+		"><": None,
 		"": None,
 	},
 
 	"search": {
 		# Full matches.
-		"abcdeeff": "abcdeeff",
-		"f": "f",
-		"df": "df",
-		"bcfff": "bcfff",
+		")}].[{(": ")}].[{(",
+		r"\][": r"\][",
+		"abc": "abc",
+		"*": "*",
+		"+": "+",
+		"?": "?",
+		"^": "^",
 
 		# Partial matches.
-		"abcdeeffxx": "abcdeeff",
-		"fxx": "f",
+		"*//*.*": "*",
+		"[[]]\"": "[[]]",
 
 		# Searches.
-		"aabbcddeef": "abbcddeef",
-		"xxabbcdeeff": "abbcdeeff",
-		"axbcdeef": "bcdeef",
-		"acff": "ff",
+		r"/\*//*.*": "\*",
+		"\"[[]]\"": "[[]]",
 
 		# Non-matches.
-		"abbcde": None,
-		"bcd": None,
-		"a": None,
+		"dde": None,
+		"><": None,
 		"": None,
 	},
 }
 
 
-def _test_simple_compile():
+def _test_set_compile():
 	r = redone.compile(PATTERN)
 
 	for test, expected in CASES["match"].items():
@@ -125,7 +125,7 @@ def _test_simple_compile():
 			print("[-]   Expected: '%s'" % (expected,))
 			print("[-]        Got: '%s'" % (result,))
 
-def _test_simple_otf():
+def _test_set_otf():
 	for test, expected in CASES["match"].items():
 		result = redone.match(PATTERN, test)
 
@@ -151,8 +151,8 @@ def _test_simple_otf():
 			print("[-]        Got: '%s'" % (result,))
 
 def test():
-	print("[*] test: simple [compiled]")
-	_test_simple_compile()
+	print("[*] test: sets [compiled]")
+	_test_set_compile()
 
-	print("[*] test: simple [on-the-fly]")
-	_test_simple_otf()
+	print("[*] test: sets [on-the-fly]")
+	_test_set_otf()

@@ -26,6 +26,8 @@ def run_bench():
 	pathological.bench(bench=25)
 
 from .test import simple
+from .test import sets
 
 def run_test():
 	simple.test()
+	sets.test()
