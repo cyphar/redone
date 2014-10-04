@@ -21,15 +21,12 @@
 # SOFTWARE.
 
 import collections
-
 from . import fsa
-from . import utils
 
 EPSILON_EDGE = ""
 
 CACHE_MOVE = 0
 
-@utils.memoise
 def _epsilon_closures(states):
 	"""
 	For a given set of NFA node states, return a set that describes the epsilon
@@ -43,7 +40,6 @@ def _epsilon_closures(states):
 
 	return epsilons
 
-@utils.memoise
 def _moves(states, token):
 	"""
 	For a given set of NFA node states, return a set that describes the states
@@ -57,7 +53,6 @@ def _moves(states, token):
 
 	return moved
 
-@utils.memoise
 def _accepts(states):
 	"""
 	For a given set of NFA node states, return true if any of the given states

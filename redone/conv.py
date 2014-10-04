@@ -22,10 +22,8 @@
 
 from . import nfa
 from . import dfa
-from . import utils
 from . import constants
 
-@utils.memoise
 def _all_edges(states):
 	"Get all edges from all states."
 
