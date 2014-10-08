@@ -29,9 +29,11 @@ from .test import simple
 from .test import sets
 from .test import greedy
 from .test import all
+from .test import sub
 
 def run_test():
 	simple.test()
 	sets.test()
 	greedy.test()
 	all.test()
+	sub.test()
