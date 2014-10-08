@@ -90,3 +90,35 @@ def search(pattern, string):
 
 	# Forward to RegexMatcher.
 	return reo.search(string)
+
+def finditer(pattern, string):
+	"""
+	Finds all non-overlapping matches for the pattern in the string. This returns
+	a generator which will yield results.
+	"""
+
+	if isinstance(pattern, regex.RegexMatcher):
+		return pattern.finditer(string)
+
+	# Avoid overhead of converting the NFA (one-time use only).
+	reo = _compile(pattern, _convert=False)
+
+	# Forward to RegexMatcher.
+	return reo.finditer(string)
+
+def findall(pattern, string):
+	"""
+	Finds all non-overlapping matches for the pattern in the string. This returns
+	a list of results.
+	"""
+
+	if isinstance(pattern, regex.RegexMatcher):
+		return pattern.finditer(string)
+
+	# Avoid overhead of converting the NFA (one-time use only).
+	reo = _compile(pattern, _convert=False)
+
+	# Forward to RegexMatcher.
+	return reo.findall(string)
+
+

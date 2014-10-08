@@ -92,3 +92,34 @@ class RegexMatcher(object):
 			return None
 
 		return RegexMatch(string, start, start + delta)
+
+	def finditer(self, string):
+		"""
+		Wraps the internal structure's finditer methods.
+		"""
+
+		start = -1
+
+		while start < len(string):
+			delta = -1
+
+			while delta < 0:
+				start += 1
+
+				if start >= len(string):
+					break
+
+				delta = self._graph.accepts(string[start:])
+
+			if delta < 0:
+				break
+
+			yield RegexMatch(string, start, start + delta)
+			start += delta - 1
+
+	def findall(self, string):
+		"""
+		Wraps the internal structure's findall methods.
+		"""
+
+		return list(self.finditer(string))
