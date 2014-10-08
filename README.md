@@ -62,7 +62,6 @@ The following features are still "in the works":
 * Proper UTF-8 support (the regex alphabet only includes `string.printable`).
 * Flags (mainly case insensitivity).
 * Submatch extraction.
-* Counted repetition (`<elem>{start,end}`)
 * Assertions (`^`, `$`, `\b` and the like).
 
 The following features are likely *not* to be implemented:

@@ -28,12 +28,14 @@ def run_bench():
 from .test import simple
 from .test import sets
 from .test import greedy
-from .test import all
+from .test import all as _all
 from .test import sub
+from .test import iter as _iter
 
 def run_test():
 	simple.test()
 	sets.test()
 	greedy.test()
-	all.test()
+	_all.test()
 	sub.test()
+	_iter.test()

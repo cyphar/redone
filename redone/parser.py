@@ -33,10 +33,20 @@ class Parser(object):
 	Abstract parser class.
 	"""
 
-	def __init__(self, tokens):
+	ALPHABET = constants.ALPHABET
+	METACHARS = constants.METACHARS
+	SETMETA = constants.SETMETA
+
+	def __init__(self, tokens, alphabet=None, metachars=None):
 		self._tokens = tokens
 		self._pos = 0
 		self._length = len(tokens)
+
+		if alphabet:
+			self.ALPHABET = set(alphabet)
+
+		if metachars:
+			self.METACHARS = set(metachars)
 
 	def end(self):
 		"""
@@ -75,9 +85,7 @@ class RegexParser(Parser):
 	# EBNF for 'redone' extended regex:
 	# <re>        ::= <simple> ( "|" <re> )?
 	# <simple>    ::= <basic>+
-	# <basic>     ::= <elem> (<iter> | "*" | "+" | "?")?
-	# <iter>      ::= "{" <number> ("," <number>?)? "}"
-	# <number>    ::= "0" | "1".."9" ("0".."9")*
+	# <basic>     ::= <elem> ("*" | "+" | "?")?
 	# <elem>      ::= "(" <re> ")"
 	# <elem>      ::= "[" "^"? <set-token>+ "]"
 	# <elem>      ::= "."
@@ -86,19 +94,6 @@ class RegexParser(Parser):
 	# <token>     ::= ¬("^" | "." | "*" | "+" | "?" | "(" | ")" | "[" | "]" | "|" | "\")
 	# <set-token> ::= "\" ("[" | "]" | "\")
 	# <set-token> ::= ¬("[" | "]" | "\")
-
-	ALPHABET = constants.ALPHABET
-	METACHARS = constants.METACHARS
-	SETMETA = constants.SETMETA
-
-	def __init__(self, tokens, alphabet=None, metachars=None):
-		super().__init__(tokens)
-
-		if alphabet:
-			self.ALPHABET = set(alphabet)
-
-		if metachars:
-			self.METACHARS = set(metachars)
 
 	def _parse_set_token(self):
 		# Metacharacter Escapes
@@ -325,9 +320,256 @@ class RegexParser(Parser):
 		return graph
 
 
-def _optimise(pattern):
-	# TODO: Optimise and expand patterns.
-	return pattern
+class SimplifyParser(Parser):
+	"""
+	Parser used to simplify regex expressions to a format which can be understood
+	by the RegexParser.
+	"""
+
+	# Repetition types.
+	ITER_SET = 0       # <simple>{<n>}
+	ITER_UNLIMITED = 1 # <simple>{<n>,}
+	ITER_FULL = 2      # <simple>{<n>,<m>}
+
+	# EBNF for Simplify Parser
+	# <re>     ::= <full> ("|" <re>)?
+	# <full>   ::= <basic>+
+	# <basic>  ::= <simple> <iter>?
+	# <iter>   ::= "{" <number> ("," <number>?)? "}"
+	# <simple> ::= "(" <re> ")"
+	# <simple> ::= "[" "^"? <set-token>+ "]"
+	# <simple> ::= <token>
+
+	def _parse_set_token(self):
+		# Metacharacter Escapes
+		if self.peek() == "\\":
+			self.next()
+
+			token = self.peek()
+			self.next()
+
+			if token not in self.SETMETA:
+				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + token))
+
+			return "\\" + token
+
+		elif self.peek() not in self.SETMETA:
+			token = self.peek()
+			self.next()
+
+			return token
+
+	def _parse_token(self):
+		# Metacharacter Escapes
+		if self.peek() == "\\":
+			self.next()
+
+			token = self.peek()
+			self.next()
+
+			if token not in self.METACHARS:
+				raise RegexParseException("Invalid escape sequence: %s." % ('\\' + token))
+
+			return "\\" + token
+
+		# All other characters.
+		elif self.peek() not in self.METACHARS:
+			token = self.peek()
+			self.next()
+
+			return token
+
+	def _parse_simple(self):
+		if self.peek() == "(":
+			item = self.peek()
+			self.next()
+
+			item += self._parse_full()
+
+			if self.peek() != ")":
+				raise RegexParseException("Missing closing ')' in regex group.")
+			item += self.peek()
+			self.next()
+
+			return item
+
+		elif self.peek() == "[":
+			item = self.peek()
+			self.next()
+
+			if self.peek() == "^":
+				item += self.peek()
+				self.next()
+
+			token = self._parse_set_token()
+
+			if token is None:
+				raise RegexParseException("Empty regex set.")
+
+			item += token
+			while not self.end() and self.peek() != "]":
+				token = self._parse_set_token()
+
+				if token is None:
+					break
+
+				item += token
+
+			if self.peek() != "]":
+				raise RegexParseException("Missing closing ']' in regex set.")
+			item += self.peek()
+			self.next()
+
+			return item
+
+		elif self.peek() == ".":
+			item = self.peek()
+			self.next()
+
+			return item
+
+		else:
+			token = self._parse_token()
+
+			if token is None:
+				return None
+
+			return token
+
+	def _parse_number(self):
+		if self.peek() == "0":
+			self.next()
+			return 0
+
+		if self.peek() not in "0123456789":
+			return None
+
+		out = 0
+		while self.peek() in "0123456789":
+			digit = self.peek()
+			self.next()
+
+			out *= 10
+			out += int(digit)
+
+		return out
+
+	def _parse_iter(self):
+		if self.peek() == "{":
+			self.next()
+
+			_type = None
+			n = self._parse_number()
+			m = None
+
+			if n is not None:
+				_type = self.ITER_SET
+
+			if self.peek() == ",":
+				self.next()
+
+				m = self._parse_number()
+
+				if n is not None:
+					_type = self.ITER_FULL
+
+				if m is None:
+					_type = self.ITER_UNLIMITED
+
+				if _type == self.ITER_FULL and m < n:
+					raise RegexParseException("Invalid values for {n,m} counted repetition.")
+
+			if _type is None:
+				raise RegexParseException("Invalid counted repitition format.")
+
+			if self.peek() != "}":
+				raise RegexParseException("Missing in closing '}' in counted repetition.")
+			self.next()
+
+			return (_type, n or 0, m or 0)
+
+	def _parse_basic(self):
+		item = self._parse_simple()
+
+		if item is None:
+			return None
+
+		if self.peek() in ["*", "+", "?"]:
+			item += self.peek()
+			self.next()
+
+			return item
+
+		_iter = self._parse_iter()
+
+		if _iter is None:
+			return item
+
+		repeat = ""
+		_type, n, m = _iter
+
+		for _ in range(n):
+			repeat += item
+
+		if _type == self.ITER_UNLIMITED:
+			return repeat + "+"
+
+		for _ in range(m - n):
+			repeat += item + "?"
+
+		return repeat
+
+	def _parse_re(self):
+		basic = self._parse_basic()
+
+		if basic is None:
+			return None
+
+		basics = basic
+		while not self.end():
+			basic = self._parse_basic()
+
+			if basic is None:
+				break
+
+			basics += basic
+
+		return basics
+
+	def _parse_full(self):
+		re = self._parse_re()
+
+		item = re
+		if self.peek() == "|":
+			item += self.peek()
+			self.next()
+
+			right = self._parse_full()
+			if right is None:
+				raise RegexParseException("Union without right side in expression.")
+
+			item += right
+
+		return item
+
+	def parse(self):
+		"""
+		Parses a regular expression and produces a "simplified" version which can be
+		understood by RegexParser.
+		"""
+
+		if not self._tokens:
+			return ""
+
+		pattern = self._parse_full()
+
+		if pattern is None:
+			raise RegexParseException("Unknown error occurred when simplifying regular expression.")
+
+		if not self.end():
+			raise RegexParseException("Trailing characters in regular expression.")
+
+		return pattern
 
 def _parse(pattern):
 	"""
@@ -336,12 +578,11 @@ def _parse(pattern):
 	to the pattern's rules.
 	"""
 
-	pattern = _optimise(pattern)
+	tokens = list(pattern)
+	pattern = SimplifyParser(tokens).parse()
 
 	if pattern is None:
-		raise RegexParseException("Error encountered when optimising pattern.")
+		raise RegexParseException("Error encountered when simplifying pattern.")
 
 	tokens = list(pattern)
-	parser = RegexParser(tokens)
-
-	return parser.parse()
+	return RegexParser(tokens).parse()
