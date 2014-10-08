@@ -40,6 +40,8 @@ To use this, you just need to do the following:
 # [<RegexMatch(...) ...>, ...]
 >>> r.finditer(string)
 # <generator object ...>
+>>> r.sub("replacement", string)
+# "replaced string"
 >>>
 >>> # On-the-fly version.
 >>> redone.match(pattern, string)
@@ -48,10 +50,12 @@ To use this, you just need to do the following:
 # <RegexMatch(...) ...>
 >>> redone.search(pattern, string)
 # <RegexMatch(...) ...>
->>> r.findall(pattern, string)
+>>> redone.findall(pattern, string)
 # [<RegexMatch(...) ...>, ...]
->>> r.finditer(pattern, string)
+>>> redone.finditer(pattern, string)
 # <generator object ...>
+>>> redone.sub(pattern, "replacement", string)
+# "replaced string"
 ```
 
 The following features are still "in the works":
@@ -60,7 +64,6 @@ The following features are still "in the works":
 * Submatch extraction.
 * Counted repetition (`<elem>{start,end}`)
 * Assertions (`^`, `$`, `\b` and the like).
-* Substitution.
 
 The following features are likely *not* to be implemented:
 * ASCII escape sequences (there's no need, just embed them in the pattern).

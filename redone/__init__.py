@@ -27,9 +27,6 @@ from . import regex
 __all__ = ["compile", "match", "fullmatch", "search"]
 
 def _compile(pattern, _convert=False):
-	# XXX: The current conversion operation isn't properly optimised, so it isn't
-	#      run by default.
-
 	graph = parser._parse(pattern)
 
 	if _convert:
@@ -121,4 +118,17 @@ def findall(pattern, string):
 	# Forward to RegexMatcher.
 	return reo.findall(string)
 
+def sub(pattern, replace, string):
+	"""
+	Replaces all occurences of the pattern in the string with the given
+	replacement.
+	"""
 
+	if isinstance(pattern, regex.RegexMatcher):
+		return pattern.sub(replace, string)
+
+	# Avoid overhead of converting the NFA (one-time use only).
+	reo = _compile(pattern, _convert=False)
+
+	# Forward to RegexMatcher.
+	return reo.sub(replace, string)
