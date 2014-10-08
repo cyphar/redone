@@ -71,6 +71,17 @@ The following features are likely *not* to be implemented:
   NP-complete, the only solution is to use backtracking in that one case
   (which would massively complicate the codebase).
 
+## Features ##
+The `redone` regular expression language currently contains the following
+features:
+
+* Wildcard matching (`.`).
+* Unions (`a|b`).
+* Character sets (`[abc][^def]`).
+* Regex grouping (`(ab(c))`).
+* Repetition (`a?b*c+`).
+* Counted repetition (`a{2}b{3,}c{4,5}`).
+
 ## Warnings ##
 * This was made in order to prove a point (and as a programming exercise).
   Python's mantra is that it is "fast enough", so the backtracking approach used
