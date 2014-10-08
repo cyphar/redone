@@ -36,6 +36,10 @@ To use this, you just need to do the following:
 # <RegexMatch(...) ...>
 >>> r.search(string)
 # <RegexMatch(...) ...>
+>>> r.findall(string)
+# [<RegexMatch(...) ...>, ...]
+>>> r.finditer(string)
+# <generator object ...>
 >>>
 >>> # On-the-fly version.
 >>> redone.match(pattern, string)
@@ -44,6 +48,10 @@ To use this, you just need to do the following:
 # <RegexMatch(...) ...>
 >>> redone.search(pattern, string)
 # <RegexMatch(...) ...>
+>>> r.findall(pattern, string)
+# [<RegexMatch(...) ...>, ...]
+>>> r.finditer(pattern, string)
+# <generator object ...>
 ```
 
 The following features are still "in the works":
