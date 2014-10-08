@@ -104,6 +104,9 @@ def _test_set_compile():
 	for test, expected in CASES["match"].items():
 		result = r.match(test)
 
+		if result:
+			result = result.group()
+
 		if result != expected:
 			print("[-] Failed matching '%s' against '%s'" % (test, PATTERN))
 			print("[-]   Expected: '%s'" % (expected,))
@@ -112,6 +115,9 @@ def _test_set_compile():
 	for test, expected in CASES["fullmatch"].items():
 		result = r.fullmatch(test)
 
+		if result:
+			result = result.group()
+
 		if result != expected:
 			print("[-] Failed fullmatching '%s' against '%s'" % (test, PATTERN))
 			print("[-]   Expected: '%s'" % (expected,))
@@ -119,6 +125,9 @@ def _test_set_compile():
 
 	for test, expected in CASES["search"].items():
 		result = r.search(test)
+
+		if result:
+			result = result.group()
 
 		if result != expected:
 			print("[-] Failed searching '%s' against '%s'" % (test, PATTERN))
@@ -129,6 +138,9 @@ def _test_set_otf():
 	for test, expected in CASES["match"].items():
 		result = redone.match(PATTERN, test)
 
+		if result:
+			result = result.group()
+
 		if result != expected:
 			print("[-] Failed matching '%s' against '%s'" % (test, PATTERN))
 			print("[-]   Expected: '%s'" % (expected,))
@@ -137,6 +149,9 @@ def _test_set_otf():
 	for test, expected in CASES["fullmatch"].items():
 		result = redone.fullmatch(PATTERN, test)
 
+		if result:
+			result = result.group()
+
 		if result != expected:
 			print("[-] Failed fullmatching '%s' against '%s'" % (test, PATTERN))
 			print("[-]   Expected: '%s'" % (expected,))
@@ -144,6 +159,9 @@ def _test_set_otf():
 
 	for test, expected in CASES["search"].items():
 		result = redone.search(PATTERN, test)
+
+		if result:
+			result = result.group()
 
 		if result != expected:
 			print("[-] Failed searching '%s' against '%s'" % (test, PATTERN))

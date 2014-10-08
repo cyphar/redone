@@ -60,7 +60,7 @@ def _bench_redone_compile(size):
 	print("[+] redone: n=%d -- compile:    %.16f seconds" % (size, compile_delta))
 
 	match_start = time.time()
-	assert matcher.fullmatch(STRING) == STRING
+	assert matcher.fullmatch(STRING).group() == STRING
 	match_end = time.time()
 
 	match_delta = match_end - match_start
@@ -73,7 +73,7 @@ def _bench_redone_otf(size):
 	STRING = "a" * size
 
 	match_start = time.time()
-	assert redone.fullmatch(PATTERN, STRING) == STRING
+	assert redone.fullmatch(PATTERN, STRING).group() == STRING
 	match_end = time.time()
 
 	match_delta = match_end - match_start

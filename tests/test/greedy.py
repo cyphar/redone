@@ -100,6 +100,9 @@ def _test_greedy_compile():
 		for test, expected in cases["cases"]["match"].items():
 			result = r.match(test)
 
+			if result:
+				result = result.group()
+
 			if result != expected:
 				print("[-] Failed matching '%s' against '%s'" % (test, pattern))
 				print("[-]   Expected: '%s'" % (expected,))
@@ -108,6 +111,9 @@ def _test_greedy_compile():
 		for test, expected in cases["cases"]["fullmatch"].items():
 			result = r.fullmatch(test)
 
+			if result:
+				result = result.group()
+
 			if result != expected:
 				print("[-] Failed fullmatching '%s' against '%s'" % (test, pattern))
 				print("[-]   Expected: '%s'" % (expected,))
@@ -115,6 +121,9 @@ def _test_greedy_compile():
 
 		for test, expected in cases["cases"]["search"].items():
 			result = r.search(test)
+
+			if result:
+				result = result.group()
 
 			if result != expected:
 				print("[-] Failed searching '%s' against '%s'" % (test, pattern))
@@ -128,6 +137,9 @@ def _test_greedy_otf():
 		for test, expected in cases["cases"]["match"].items():
 			result = redone.match(pattern, test)
 
+			if result:
+				result = result.group()
+
 			if result != expected:
 				print("[-] Failed matching '%s' against '%s'" % (test, pattern))
 				print("[-]   Expected: '%s'" % (expected,))
@@ -136,6 +148,9 @@ def _test_greedy_otf():
 		for test, expected in cases["cases"]["fullmatch"].items():
 			result = redone.fullmatch(pattern, test)
 
+			if result:
+				result = result.group()
+
 			if result != expected:
 				print("[-] Failed fullmatching '%s' against '%s'" % (test, pattern))
 				print("[-]   Expected: '%s'" % (expected,))
@@ -143,6 +158,9 @@ def _test_greedy_otf():
 
 		for test, expected in cases["cases"]["search"].items():
 			result = redone.search(pattern, test)
+
+			if result:
+				result = result.group()
 
 			if result != expected:
 				print("[-] Failed searching '%s' against '%s'" % (test, pattern))
