@@ -123,3 +123,20 @@ class RegexMatcher(object):
 		"""
 
 		return list(self.finditer(string))
+
+	def sub(self, replace, string):
+		"""
+		Wraps the internal structure's substitution methods.
+		"""
+
+		last = 0
+		out = ""
+
+		for match in self.finditer(string):
+			out += string[last:match._start]
+			out += replace
+
+			last = match._end
+
+		out += string[last:]
+		return out
