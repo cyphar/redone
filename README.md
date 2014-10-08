@@ -31,13 +31,19 @@ To use this, you just need to do the following:
 >>> # Pre-compiled version (recommended).
 >>> r = redone.compile(pattern)
 >>> r.match(string)
+# <RegexMatch(...) ...>
 >>> r.fullmatch(string)
+# <RegexMatch(...) ...>
 >>> r.search(string)
+# <RegexMatch(...) ...>
 >>>
 >>> # On-the-fly version.
 >>> redone.match(pattern, string)
+# <RegexMatch(...) ...>
 >>> redone.fullmatch(pattern, string)
+# <RegexMatch(...) ...>
 >>> redone.search(pattern, string)
+# <RegexMatch(...) ...>
 ```
 
 The following features are still "in the works":
