@@ -22,6 +22,23 @@
 
 from . import fsa
 
+class RegexMatch(object):
+	def __init__(self, string, start, end, groups=None):
+		self._slice = string[start:end]
+		self._start = start
+		self._end = end
+		self._groups = groups or []
+
+	def __repr__(self):
+		return "<RegexMatch(%r, %r) %r>" % (self._start, self._end, self._slice)
+
+	def group(self):
+		return self._slice
+
+	def groups(self, index):
+		if index < len(self._groups):
+			return self._groups[index]
+
 class RegexMatcher(object):
 	"""
 	Wrapper for an internal structure which represents a regular expression
@@ -45,7 +62,7 @@ class RegexMatcher(object):
 		if end < 0:
 			return None
 
-		return string[:end]
+		return RegexMatch(string, 0, end)
 
 	def fullmatch(self, string):
 		"""
@@ -58,7 +75,7 @@ class RegexMatcher(object):
 		if end != len(string):
 			return None
 
-		return string[:end]
+		return RegexMatch(string, 0, end)
 
 	def search(self, string):
 		"""
@@ -74,4 +91,4 @@ class RegexMatcher(object):
 		if delta < 0:
 			return None
 
-		return string[start:start+delta]
+		return RegexMatch(string, start, start + delta)
