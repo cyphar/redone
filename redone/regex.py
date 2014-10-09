@@ -21,6 +21,10 @@
 # SOFTWARE.
 
 from . import fsa
+import types
+
+def is_callable(obj):
+	return type(obj) in (types.FunctionType, types.LambdaType)
 
 class RegexMatch(object):
 	def __init__(self, string, start, end, groups=None):
@@ -132,10 +136,15 @@ class RegexMatcher(object):
 		last = 0
 		out = ""
 
+		repl = replace
 		for match in self.finditer(string):
 			out += string[last:match._start]
-			out += replace
 
+			# Callable replaces based on match.
+			if is_callable(replace):
+				repl = replace(match._slice)
+
+			out += repl
 			last = match._end
 
 		out += string[last:]
