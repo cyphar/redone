@@ -334,14 +334,14 @@ class SimplifyParser(Parser):
 	# EBNF for Simplify Parser
 	# <re>     ::= <full> ("|" <re>)?
 	# <full>   ::= <basic>+
-	# <basic>  ::= <simple> <iter>?
+	# <basic>  ::= <simple> ("*" | "+" | "?" | <iter>)?
 	# <iter>   ::= "{" <number> ("," <number>?)? "}"
 	# <simple> ::= "(" <re> ")"
 	# <simple> ::= "[" "^"? <set-token>+ "]"
 	# <simple> ::= <token>
 
 	def _parse_set_token(self):
-		# Metacharacter Escapes
+		# Metacharacter escapes.
 		if self.peek() == "\\":
 			self.next()
 
@@ -353,6 +353,7 @@ class SimplifyParser(Parser):
 
 			return "\\" + token
 
+		# All other characters.
 		elif self.peek() not in self.SETMETA:
 			token = self.peek()
 			self.next()
@@ -360,7 +361,7 @@ class SimplifyParser(Parser):
 			return token
 
 	def _parse_token(self):
-		# Metacharacter Escapes
+		# Metacharacter escapes.
 		if self.peek() == "\\":
 			self.next()
 
@@ -380,6 +381,7 @@ class SimplifyParser(Parser):
 			return token
 
 	def _parse_simple(self):
+		# Groups.
 		if self.peek() == "(":
 			item = self.peek()
 			self.next()
@@ -393,6 +395,7 @@ class SimplifyParser(Parser):
 
 			return item
 
+		# Sets.
 		elif self.peek() == "[":
 			item = self.peek()
 			self.next()
@@ -422,12 +425,14 @@ class SimplifyParser(Parser):
 
 			return item
 
+		# Wildcards.
 		elif self.peek() == ".":
 			item = self.peek()
 			self.next()
 
 			return item
 
+		# Other.
 		else:
 			token = self._parse_token()
 
@@ -437,10 +442,12 @@ class SimplifyParser(Parser):
 			return token
 
 	def _parse_number(self):
+		# Special case: leading zero is only the number 0.
 		if self.peek() == "0":
 			self.next()
 			return 0
 
+		# No digit => not a number.
 		if self.peek() not in "0123456789":
 			return None
 
@@ -449,12 +456,14 @@ class SimplifyParser(Parser):
 			digit = self.peek()
 			self.next()
 
+			# Shift rest up one place and add digit.
 			out *= 10
 			out += int(digit)
 
 		return out
 
 	def _parse_iter(self):
+		# Counted repetition.
 		if self.peek() == "{":
 			self.next()
 
@@ -465,6 +474,7 @@ class SimplifyParser(Parser):
 			if n is not None:
 				_type = self.ITER_SET
 
+			# Different form -- {n,m}.
 			if self.peek() == ",":
 				self.next()
 
@@ -476,6 +486,7 @@ class SimplifyParser(Parser):
 				if m is None:
 					_type = self.ITER_UNLIMITED
 
+				# Ensure values make sense.
 				if _type == self.ITER_FULL and m < n:
 					raise RegexParseException("Invalid values for {n,m} counted repetition.")
 
@@ -486,6 +497,7 @@ class SimplifyParser(Parser):
 				raise RegexParseException("Missing in closing '}' in counted repetition.")
 			self.next()
 
+			# Give the type data and {min,max} data.
 			return (_type, n or 0, m or 0)
 
 	def _parse_basic(self):
@@ -494,6 +506,7 @@ class SimplifyParser(Parser):
 		if item is None:
 			return None
 
+		# Standard modifiers.
 		if self.peek() in ["*", "+", "?"]:
 			item += self.peek()
 			self.next()
@@ -508,24 +521,27 @@ class SimplifyParser(Parser):
 		repeat = ""
 		_type, n, m = _iter
 
+		# Repeat "minimum".
 		for _ in range(n):
 			repeat += item
 
+		# No limit -- just add plus.
 		if _type == self.ITER_UNLIMITED:
 			return repeat + "+"
 
+		# Repeat "optional" maximum.
 		for _ in range(m - n):
 			repeat += item + "?"
 
 		return repeat
 
 	def _parse_re(self):
-		basic = self._parse_basic()
+		basics = self._parse_basic()
 
-		if basic is None:
+		if basics is None:
 			return None
 
-		basics = basic
+		# Get basics.
 		while not self.end():
 			basic = self._parse_basic()
 
@@ -537,9 +553,9 @@ class SimplifyParser(Parser):
 		return basics
 
 	def _parse_full(self):
-		re = self._parse_re()
+		item = self._parse_re()
 
-		item = re
+		# Unions.
 		if self.peek() == "|":
 			item += self.peek()
 			self.next()
@@ -566,6 +582,7 @@ class SimplifyParser(Parser):
 		if pattern is None:
 			raise RegexParseException("Unknown error occurred when simplifying regular expression.")
 
+		# Pattern *must* be consumed.
 		if not self.end():
 			raise RegexParseException("Trailing characters in regular expression.")
 
@@ -575,14 +592,11 @@ def _parse(pattern):
 	"""
 	Compile a given pattern into an NFA which represents the pattern's state
 	machine. The return statement is an NFANode graph which will match according
-	to the pattern's rules.
+	to the pattern's rules. The pattern is first "simplified" in order to all for
+	pre-parse checks and optimisations to patterns.
 	"""
 
+	pattern = SimplifyParser(list(pattern)).parse()
 	tokens = list(pattern)
-	pattern = SimplifyParser(tokens).parse()
 
-	if pattern is None:
-		raise RegexParseException("Error encountered when simplifying pattern.")
-
-	tokens = list(pattern)
 	return RegexParser(tokens).parse()
