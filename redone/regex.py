@@ -142,7 +142,7 @@ class RegexMatcher(object):
 
 			# Callable replaces based on match.
 			if is_callable(replace):
-				repl = replace(match._slice)
+				repl = replace(match)
 
 			out += repl
 			last = match._end
