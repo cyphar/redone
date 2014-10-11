@@ -22,33 +22,57 @@
 
 import redone
 
-PATTERN = r"a?b+c*"
-REPLACE = "<...>"
-CASES = {
-	"abcxcbabcxxbc": "<...>xc<...><...>xx<...>",
-	"aaaa": "aaaa",
-	"bbbb": "<...>",
-}
+SUITES = [
+	{
+		"pattern": r"a?b+c*",
+		"replace": lambda match: "<%s>" % (match.group().upper()),
+		"cases": {
+			"abcxcbabcxxbc": "<ABC>xc<B><ABC>xx<BC>",
+			"aaaa": "aaaa",
+			"bbbb": "<BBBB>",
+		}
+	},
+
+	{
+		"pattern": r"a?b+c*",
+		"replace": "<...>",
+		"cases": {
+			"abcxcbabcxxbc": "<...>xc<...><...>xx<...>",
+			"aaaa": "aaaa",
+			"bbbb": "<...>",
+		}
+	},
+]
 
 def _test_sub_compile():
-	r = redone.compile(PATTERN)
+	for suite in SUITES:
+		pattern = suite["pattern"]
+		replace = suite["replace"]
+		cases = suite["cases"]
 
-	for test, expected in CASES.items():
-		result = r.sub(REPLACE, test)
+		r = redone.compile(pattern)
 
-		if result != expected:
-			print("[-] Failed matching '%s' against '%s'" % (test, PATTERN))
-			print("[-]   Expected: '%s'" % (expected,))
-			print("[-]        Got: '%s'" % (result,))
+		for test, expected in cases.items():
+			result = r.sub(replace, test)
+
+			if result != expected:
+				print("[-] Failed matching '%s' against '%s'" % (test, pattern))
+				print("[-]   Expected: '%s'" % (expected,))
+				print("[-]        Got: '%s'" % (result,))
 
 def _test_sub_otf():
-	for test, expected in CASES.items():
-		result = redone.sub(PATTERN, REPLACE, test)
+	for suite in SUITES:
+		pattern = suite["pattern"]
+		replace = suite["replace"]
+		cases = suite["cases"]
 
-		if result != expected:
-			print("[-] Failed matching '%s' against '%s'" % (test, PATTERN))
-			print("[-]   Expected: '%s'" % (expected,))
-			print("[-]        Got: '%s'" % (result,))
+		for test, expected in cases.items():
+			result = redone.sub(pattern, replace, test)
+
+			if result != expected:
+				print("[-] Failed matching '%s' against '%s'" % (test, pattern))
+				print("[-]   Expected: '%s'" % (expected,))
+				print("[-]        Got: '%s'" % (result,))
 
 def test():
 	print("[*] test: sub [compiled]")
