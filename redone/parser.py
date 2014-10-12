@@ -23,6 +23,14 @@
 from . import nfa
 from . import constants
 
+T_ELEMENT = "element"
+T_GROUP = "group"
+T_MODIFIER = "modifier"
+T_UNION = "union"
+
+T_START = "start"
+T_END = "end"
+
 
 class RegexParseException(Exception):
 	pass
@@ -95,6 +103,12 @@ class RegexParser(Parser):
 	# <set-token> ::= "\" ("[" | "]" | "\")
 	# <set-token> ::= ¬("[" | "]" | "\")
 
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		# Current group "number".
+		self._group_count = 0
+
 	def _parse_set_token(self):
 		# Metacharacter Escapes
 		if self.peek() == "\\":
@@ -135,18 +149,25 @@ class RegexParser(Parser):
 			return token
 
 	def _parse_elem(self):
-		start = nfa.NFANode(tag="elem_start", accept=False)
-		end = nfa.NFANode(tag="elem_end", accept=True)
+		start = nfa.NFANode(tag=(T_ELEMENT, T_START), accept=False)
+		end = nfa.NFANode(tag=(T_ELEMENT, T_END), accept=True)
 
 		# Groups
 		if self.peek() == "(":
 			self.next()
+
+			self._group_count += 1
+			grp_count = self._group_count
 
 			graph = self._parse_re()
 
 			if self.peek() != ")":
 				raise RegexParseException("Missing closing ')' in regex group.")
 			self.next()
+
+			# Re-label groups start and end.
+			start._tag = (T_GROUP, T_START, grp_count)
+			end._tag = (T_GROUP, T_END, grp_count)
 
 			# Make graph link with the start and end.
 			start.add_edge(nfa.EPSILON_EDGE, graph)
@@ -218,8 +239,8 @@ class RegexParser(Parser):
 			self.next()
 
 			# Set up new start and end nodes.
-			start = nfa.NFANode(tag="modifier_start", accept=False)
-			end = nfa.NFANode(tag="modifier_end", accept=True)
+			start = nfa.NFANode(tag=(T_MODIFIER, T_START), accept=False)
+			end = nfa.NFANode(tag=(T_MODIFIER, T_END), accept=True)
 
 			# Attach element to start and end.
 			start.add_edge(nfa.EPSILON_EDGE, node)
@@ -286,8 +307,8 @@ class RegexParser(Parser):
 				raise RegexParseException("Union without right side in expression.")
 
 			# Create new starting and accepting nodes.
-			start = nfa.NFANode(tag="union_start", accept=False)
-			end = nfa.NFANode(tag="union_end", accept=True)
+			start = nfa.NFANode(tag=(T_UNION, T_START), accept=False)
+			end = nfa.NFANode(tag=(T_UNION, T_END), accept=True)
 
 			# Add links to left and right.
 			start.add_edge(nfa.EPSILON_EDGE, left)
