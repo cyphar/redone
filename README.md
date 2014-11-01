@@ -63,6 +63,7 @@ The following features are still "in the works":
 * Flags (mainly case insensitivity).
 * Submatch extraction.
 * Assertions (`^`, `$`, `\b` and the like).
+* Character class ranges (because apparently they are used a lot).
 
 The following features are likely *not* to be implemented:
 * ASCII escape sequences (there's no need, just embed them in the pattern).
