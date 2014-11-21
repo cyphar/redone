@@ -20,10 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from .bench import pathological
+from .bench import pathological1
+from .bench import pathological2
+from .bench import pathological3
 
 def run_bench():
-	pathological.bench(bench=25)
+	pathological1.bench(bench=16)
+	pathological2.bench(bench=25)
+	pathological3.bench(bench=25)
 
 from .test import simple
 from .test import sets
