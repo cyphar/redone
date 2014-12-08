@@ -20,6 +20,21 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+
+class FSATag(object):
+	"""
+	Helper to make tagging of FSA graphs and nodes easier.
+	"""
+
+	def __init__(self, _class=None, _type=None, _extra=None):
+		self._class = _class
+		self._type = _type
+		self._extra = _extra
+
+	def __hash__(self):
+		return hash((self._class, self._type, self._extra))
+
+
 class FSANode(object):
 	"""
 	Base class for both DFA and NFA nodes.

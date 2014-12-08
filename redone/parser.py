@@ -330,6 +330,16 @@ class RegexParser(Parser):
 		if graph is None:
 			raise RegexParseException("Unknown error occurred.")
 
+		## Wrap graph in special group "0" match.
+		#start = nfa.NFANode(tag=(constants.T_GROUP, constants.T_START, 0), accept=False)
+		#end = nfa.NFANode(tag=(constants.T_GROUP, constants.T_START, 0), accept=True)
+
+		## Add links to graph and patch graph.
+		#start.add_edge(nfa.EPSILON_EDGE, graph)
+		#graph.patch(end, label=nfa.EPSILON_EDGE)
+
+		## Update graph.
+		#graph = start
 		return graph
 
 

@@ -89,8 +89,33 @@ class DFANode(fsa.FSANode):
 		state = self
 		end = -1
 
+		_active = {}
+		matches = {}
+
 		for index, token in enumerate(string):
 			next_state = state.move(token)
+
+			# TODO: Fix this. Because of epsilon edges, you are both on start and end groups. FUUUUUU.
+
+			# Get group matches that start in the current set of states.
+			start_states = [state for state in next_state._tag if state._tag[:2] == (constants.T_GROUP, constants.T_START)]
+			for start_state in sorted(start_states, key=lambda state: state._tag[2]):
+				group_num = start_state._tag[2]
+				_active[group_num] = index
+
+			# Get group matches that end in the current set of states.
+			end_states = [state for state in next_state._tag if state._tag[:2] == (constants.T_GROUP, constants.T_END)]
+			for end_state in sorted(end_states, key=lambda state: state._tag[2]):
+				group_num = end_state._tag[2]
+
+				if group_num not in  _active:
+					raise NFAException("Reached ending group without registering starting group during matching.")
+
+				m_start = _active[group_num]
+				m_end = index
+
+				matches[group_num] = (m_start, m_end)
+				#del _active[group_num]
 
 			# Landed on an accepting state.
 			if next_state._accept:
@@ -98,4 +123,4 @@ class DFANode(fsa.FSANode):
 
 			state = next_state
 
-		return end
+		return end, [matches[key] for key in sorted(matches)]

@@ -31,7 +31,10 @@ class RegexMatch(object):
 		self._slice = string[start:end]
 		self._start = start
 		self._end = end
-		self._groups = groups or []
+
+		self._groups = []
+		for group in groups or []:
+			self._groups.append(string[group[0]:group[1]])
 
 	def __repr__(self):
 		return "<RegexMatch(%r, %r) %r>" % (self._start, self._end, self._slice)
@@ -60,26 +63,26 @@ class RegexMatcher(object):
 		Wraps the internal structure's matching methods.
 		"""
 
-		end = self._graph.accepts(string)
+		end, matches = self._graph.accepts(string)
 
 		# No match.
 		if end < 0:
 			return None
 
-		return RegexMatch(string, 0, end)
+		return RegexMatch(string, 0, end, matches)
 
 	def fullmatch(self, string):
 		"""
 		Wraps the internal structure's full matching methods.
 		"""
 
-		end = self._graph.accepts(string)
+		end, matches = self._graph.accepts(string)
 
 		# Incomplete match.
 		if end != len(string):
 			return None
 
-		return RegexMatch(string, 0, end)
+		return RegexMatch(string, 0, end, matches)
 
 	def search(self, string):
 		"""
@@ -90,12 +93,12 @@ class RegexMatcher(object):
 
 		while delta < 0 and len(string) > start:
 			start += 1
-			delta = self._graph.accepts(string[start:])
+			delta, matches = self._graph.accepts(string[start:])
 
 		if delta < 0:
 			return None
 
-		return RegexMatch(string, start, start + delta)
+		return RegexMatch(string, start, start + delta, matches)
 
 	def finditer(self, string):
 		"""
@@ -113,12 +116,12 @@ class RegexMatcher(object):
 				if start >= len(string):
 					break
 
-				delta = self._graph.accepts(string[start:])
+				delta, matches = self._graph.accepts(string[start:])
 
 			if delta < 0:
 				break
 
-			yield RegexMatch(string, start, start + delta)
+			yield RegexMatch(string, start, start + delta, matches)
 			start += delta - 1
 
 	def findall(self, string):

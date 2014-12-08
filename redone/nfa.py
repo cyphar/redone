@@ -177,16 +177,45 @@ class NFANode(fsa.FSANode):
 
 	def accepts(self, string):
 		"""
-		Returns the right-most index of the given string which, when consumed by the
-		NFA graph, ends on an accepting node. If no such index exists, accepts returns
-		-1.
+		Returns the a list of tuples of (start, end) of every submatch for the given
+		string, assuming that that the given string (when consumed by the NFA graph)
+		ends on an accepting node. If the string could not be matched, accepts returns
+		None.
 		"""
 
 		states = self._epsilon_closure()
 		end = -1
 
+		_active = {}
+		matches = {}
+
 		for index, token in enumerate(string):
 			next_states = _moves(states, token)
+
+			# TODO: Fix this. Because of epsilon edges, you are both on start and end groups. FUUUUUU.
+
+			# Get group matches that start in the current set of states.
+			start_states = [state for state in next_states if state._tag[:2] == (constants.T_GROUP, constants.T_START)]
+			for start_state in sorted(start_states, key=lambda state: state._tag[2]):
+				group_num = start_state._tag[2]
+				print("start reached for %d: %r %r" % (group_num, _active, matches))
+				_active[group_num] = index
+
+			# Get group matches that end in the current set of states.
+			end_states = [state for state in next_states if state._tag[:2] == (constants.T_GROUP, constants.T_END)]
+			for end_state in sorted(end_states, key=lambda state: state._tag[2]):
+				group_num = end_state._tag[2]
+
+				print("end reached for %d: %r %r" % (group_num, _active, matches))
+
+				if group_num not in  _active:
+					raise NFAException("Reached ending group without registering starting group during matching.")
+
+				m_start = _active[group_num]
+				m_end = index
+
+				matches[group_num] = (m_start, m_end)
+				#del _active[group_num]
 
 			# Landed on an accepting set of states.
 			if _accepts(next_states):
@@ -198,7 +227,7 @@ class NFANode(fsa.FSANode):
 
 			states = next_states
 
-		return end
+		return end, [matches[key] for key in sorted(matches)]
 
 	def _get_lasts(self, seen=None):
 		"""
