@@ -26,3 +26,13 @@ ALPHABET = set(string.printable)
 #METACHARS = {"^", ".", "*", "+", "?", "(", ")", "[", "]", "{", "}", "|", "\\"}
 METACHARS = {"^", ".", "*", "+", "?", "(", ")", "[", "]", "{", "}", "|", "\\"}
 SETMETA = {"[", "]", "\\"}
+
+T_NOOP = "noop"
+T_SINK = "sink"
+T_ELEMENT = "element"
+T_GROUP = "group"
+T_MODIFIER = "modifier"
+T_UNION = "union"
+
+T_START = "start"
+T_END = "end"

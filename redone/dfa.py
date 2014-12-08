@@ -23,6 +23,7 @@
 import collections
 
 from . import fsa
+from . import constants
 
 
 class DFAException(Exception):

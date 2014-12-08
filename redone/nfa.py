@@ -21,7 +21,9 @@
 # SOFTWARE.
 
 import collections
+
 from . import fsa
+from . import constants
 
 EPSILON_EDGE = ""
 

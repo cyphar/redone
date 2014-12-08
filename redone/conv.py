@@ -51,7 +51,8 @@ def nfa2dfa(graph):
 	new_graph = dfa.DFANode(tag=states, accept=nfa._accepts(states))
 
 	# Sink -- where all edges go to die.
-	sink = dfa.DFANode(tag="sink", accept=False)
+	nfa_sink = nfa.NFANode(tag=(constants.T_SINK,), accept=False)
+	sink = dfa.DFANode(tag=frozenset({nfa_sink}), accept=False)
 	for token in constants.ALPHABET:
 		sink.add_edge(token, sink)
 
