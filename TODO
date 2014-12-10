@@ -1,0 +1,7 @@
+* Completely revamp graph generation, because it is currently broken if we are
+  to implement submatch extraction (FFS, this will be a pain).
+* Submatch extraction (especially for regex substitution).
+* Character sets.
+* Full Unicode support (don't whitelist characters).
+* Assertions ("^", "$", "\b", and company).
+* Flags.
